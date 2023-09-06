@@ -1,9 +1,9 @@
 #!/bin/sh
 # about your tracker
-script="vit_dist"
-config="vit_256_h128_noKD"
+script="efficienttrack"
+config="base"
 num_gpus=2
-num_thread=8
+num_thread=16
 # training
 python tracking/train.py --script $script --config $config --save_dir ./output --mode multiple --nproc_per_node $num_gpus --use_wandb 0
 # evaluation for lasot

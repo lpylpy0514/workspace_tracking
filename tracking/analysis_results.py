@@ -69,7 +69,9 @@ dataset_name = 'lasot'
 # trackers.extend(trackerlist(name='vit_dist', parameter_name='mae_128_h128_noKD', dataset_name=dataset_name,
 #                             run_ids=None, display_name='mae'))
 trackers.extend(trackerlist(name='vit_dist', parameter_name='vit_48_h32_noKD', dataset_name=dataset_name,
-                            run_ids=None, display_name='base'))
+                            run_ids=None, display_name='48'))
+trackers.extend(trackerlist(name='vit_dist', parameter_name='vit_256_h128_noKD', dataset_name=dataset_name,
+                            run_ids=None, display_name='256'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_256_mae_ce_32x4_ep300', dataset_name=dataset_name,
 #                             run_ids=None, display_name='OSTrack256'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_384_mae_ce_32x4_ep300', dataset_name=dataset_name,
