@@ -256,6 +256,15 @@ class EfficientViT(torch.nn.Module):
             return [self.norm(x.permute(0, 2, 1))]
 
 
+#  replace conv+BN to conv
+def replace_batchnorm(net):
+    for child_name, child in net.named_children():
+        if hasattr(child, 'fuse'):
+            setattr(net, child_name, child.fuse())
+        else:
+            replace_batchnorm(child)
+
+
 if __name__ == '__main__':
     model = EfficientViT(depth=3, stages="FGAF")
     search = torch.randn((1, 3, 256, 256))
@@ -278,7 +287,6 @@ if __name__ == '__main__':
     macs, params = clever_format([macs1, params1], "%.3f")
     print('overall macs is ', macs)
     print('overall params is ', params)
-    # model = EfficientViTBlock('s', 128, 16, nh=4, ar=2)
     model = GroupAttention(128, 16, 4, 2)
     total_params = 0
 
