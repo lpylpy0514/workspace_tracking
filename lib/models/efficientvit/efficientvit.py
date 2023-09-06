@@ -1,5 +1,6 @@
 # light vit tracker
 import torch
+from torch import nn
 from timm.models.vision_transformer import trunc_normal_
 from thop import profile
 from thop.utils import clever_format
@@ -94,29 +95,69 @@ class Residual(torch.nn.Module):
             return x + self.m(x)
 
 
+# class FFN(torch.nn.Module):
+#     def __init__(self, ed, h):
+#         super().__init__()
+#         in_features = ed
+#         hidden_features = h
+#         out_features = ed
+#         self.pw1 = torch.nn.Conv1d(in_features, hidden_features, 1)
+#         self.bn1 = torch.nn.BatchNorm1d(hidden_features)
+#         self.act = torch.nn.ReLU()
+#         self.pw2 = torch.nn.Conv1d(hidden_features, out_features, 1)
+#         self.bn2 = torch.nn.BatchNorm1d(out_features)
+#
+#     def forward(self, x):
+#         x = self.bn2(self.pw2(self.act(self.bn1(self.pw1(x)))))
+#         return x
+
+
 class FFN(torch.nn.Module):
-    def __init__(self, ed, h):
+    def __init__(self, embed_dim, hidden_dim):
         super().__init__()
-        in_features = ed
-        hidden_features = h
-        out_features = ed
-        self.pw1 = torch.nn.Conv1d(in_features, hidden_features, 1)
-        self.bn1 = torch.nn.BatchNorm1d(hidden_features)
+        self.pw1 = Conv1d_BN(embed_dim, hidden_dim, 1)
         self.act = torch.nn.ReLU()
-        self.pw2 = torch.nn.Conv1d(hidden_features, out_features, 1)
-        self.bn2 = torch.nn.BatchNorm1d(out_features)
+        self.pw2 = Conv1d_BN(hidden_dim, embed_dim, 1)
 
     def forward(self, x):
-        x = self.bn2(self.pw2(self.act(self.bn1(self.pw1(x)))))
+        x = self.pw2(self.act(self.pw1(x)))
+        return x
+
+
+class Attention(nn.Module):
+    def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0., proj_drop=0.):
+        super().__init__()
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        self.scale = head_dim ** -0.5
+
+        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+    def forward(self, x, return_attention=False):
+        x = x.transpose(1, 2)
+        B, N, C = x.shape
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
+
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn.softmax(dim=-1)
+        attn = self.attn_drop(attn)
+
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+
+        if return_attention:
+            return x, attn
+        x = x.transpose(1, 2)
         return x
 
 
 class GroupAttention(torch.nn.Module):
-    def __init__(self, dim, key_dim, num_heads=8,
-                 attn_ratio=4,
-                 # resolution=14,
-                 # kernels=[5, 5, 5, 5],
-                 ):
+    def __init__(self, dim, key_dim, num_heads=8, attn_ratio=4):
         super().__init__()
         self.num_heads = num_heads
         self.scale = key_dim ** -0.5
@@ -139,23 +180,28 @@ class GroupAttention(torch.nn.Module):
         return x
 
 
-
 class EfficientViTBlock(torch.nn.Module):
-    def __init__(self, type,
-                 ed, kd, nh=8,
-                 ar=4,
-                 # resolution=14,
-                 # window_resolution=7,
-                 # kernels=[5, 5, 5, 5],
-                 ):
+    def __init__(self, type, embed_dim, kd, num_heads=8, attn_ratio=4):
         super().__init__()
-
-        self.ffn0 = Residual(FFN(ed, int(ed * 2)))
-
-        if type == 's':
-            self.mixer = Residual(GroupAttention(ed, kd, nh, attn_ratio=ar))
-
-        self.ffn1 = Residual(FFN(ed, int(ed * 2)))
+        self.type = type
+        if self.type == 'FGAF':
+            self.ffn0 = Residual(FFN(embed_dim, int(embed_dim * 2)))
+            self.mixer = Residual(GroupAttention(embed_dim, kd, num_heads, attn_ratio=attn_ratio))
+            self.ffn1 = Residual(FFN(embed_dim, int(embed_dim * 2)))
+        elif self.type == "GAF":
+            self.ffn0 = torch.nn.Identity()
+            self.mixer = Residual(GroupAttention(embed_dim, kd, num_heads, attn_ratio=attn_ratio))
+            self.ffn1 = Residual(FFN(embed_dim, int(embed_dim * 4)))
+        elif self.type == 'FAF':
+            self.ffn0 = Residual(FFN(embed_dim, int(embed_dim * 2)))
+            self.mixer = Residual(Attention(embed_dim, num_heads=num_heads))
+            self.ffn1 = Residual(FFN(embed_dim, int(embed_dim * 2)))
+        elif self.type == 'AF':
+            self.ffn0 = torch.nn.Identity()
+            self.mixer = Residual(Attention(embed_dim, num_heads=num_heads))
+            self.ffn1 = Residual(FFN(embed_dim, int(embed_dim * 4)))
+        else:
+            raise NotImplementedError
 
     def forward(self, x):
         return self.ffn1(self.mixer(self.ffn0(x)))
@@ -166,7 +212,7 @@ class EfficientViT(torch.nn.Module):
                  search_size=256,
                  patch_size=16,
                  in_chans=3,
-                 stages='s',
+                 stages='AF',
                  embed_dim=128,
                  key_dim=16,
                  depth=6,
@@ -175,10 +221,11 @@ class EfficientViT(torch.nn.Module):
         super().__init__()
 
         # Patch embedding
-        self.patch_embed = torch.nn.Sequential(Conv2d_BN(in_chans, embed_dim // 8, 3, 2, 1), torch.nn.ReLU(),
-                                               Conv2d_BN(embed_dim // 8, embed_dim // 4, 3, 2, 1,), torch.nn.ReLU(),
-                                               Conv2d_BN(embed_dim // 4, embed_dim // 2, 3, 2, 1,), torch.nn.ReLU(),
+        self.patch_embed = torch.nn.Sequential(Conv2d_BN(in_chans, embed_dim // 8, 3, 2, 1), torch.nn.Hardswish(),
+                                               Conv2d_BN(embed_dim // 8, embed_dim // 4, 3, 2, 1,), torch.nn.Hardswish(),
+                                               Conv2d_BN(embed_dim // 4, embed_dim // 2, 3, 2, 1,), torch.nn.Hardswish(),
                                                Conv2d_BN(embed_dim // 2, embed_dim, 3, 2, 1,))
+
         self.distillation = distillation
         self.blocks = []
         attn_ratio = embed_dim // (num_heads * key_dim)
@@ -186,8 +233,8 @@ class EfficientViT(torch.nn.Module):
             self.blocks.append(EfficientViTBlock(stages, embed_dim, key_dim, num_heads, attn_ratio))
         self.blocks = torch.nn.Sequential(*self.blocks)
         self.norm = torch.nn.LayerNorm(embed_dim)
-        self.pos_embed_z = torch.nn.Parameter(torch.zeros(1, 64, embed_dim))
-        self.pos_embed_x = torch.nn.Parameter(torch.zeros(1, 256, embed_dim))
+        self.pos_embed_z = torch.nn.Parameter(torch.zeros(1, (template_size // patch_size) ** 2, embed_dim))
+        self.pos_embed_x = torch.nn.Parameter(torch.zeros(1, (search_size // patch_size) ** 2, embed_dim))
 
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -210,41 +257,34 @@ class EfficientViT(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    # model = EfficientViT(depth=4)
-    # search = torch.randn((1, 3, 256, 256))
-    # template = torch.randn((1, 3, 128, 128))
-    # res = model(template, search)
-    # # model = model.to(torch.device(0))
-    # # template = template.to(torch.device(0))
-    # # search = search.to(torch.device(0))
-    #
-    # # for _ in range(100):
-    # #     __ = model(template, search)
-    # #
-    # # import time
-    # # tic = time.time()
-    # # for _ in range(1000):
-    # #     __ = model(template, search)
-    # # print(time.time() - tic)
-    # macs1, params1 = profile(model, inputs=(template, search),
-    #                          custom_ops=None, verbose=False)
-    # macs, params = clever_format([macs1, params1], "%.3f")
-    # print('overall macs is ', macs)
-    # print('overall params is ', params)
-    # # model = EfficientViTBlock('s', 128, 16, nh=4, ar=2)
-    # model = GroupAttention(128, 16, 4, 2)
-    # total_params = 0
-    #
-    # # 遍历网络模型的所有参数
-    # for param in model.parameters():
-    #     # 获取参数的数量并添加到总数中
-    #     total_params += param.numel()
-    # print(total_params)
-    model = Conv1d_BN(3, 5, 1)
-    model.eval()
-    data = torch.rand((1, 3, 100))
-    res1 = model(data)
-    model = model.fuse()
-    res2 = model(data)
+    model = EfficientViT(depth=3, stages="FGAF")
+    search = torch.randn((1, 3, 256, 256))
+    template = torch.randn((1, 3, 128, 128))
+    res = model(template, search)
+    # model = model.to(torch.device(0))
+    # template = template.to(torch.device(0))
+    # search = search.to(torch.device(0))
 
-    a = 1
+    # for _ in range(100):
+    #     __ = model(template, search)
+    #
+    # import time
+    # tic = time.time()
+    # for _ in range(1000):
+    #     __ = model(template, search)
+    # print(time.time() - tic)
+    macs1, params1 = profile(model, inputs=(template, search),
+                             custom_ops=None, verbose=False)
+    macs, params = clever_format([macs1, params1], "%.3f")
+    print('overall macs is ', macs)
+    print('overall params is ', params)
+    # model = EfficientViTBlock('s', 128, 16, nh=4, ar=2)
+    model = GroupAttention(128, 16, 4, 2)
+    total_params = 0
+
+    # 遍历网络模型的所有参数
+    for param in model.parameters():
+        # 获取参数的数量并添加到总数中
+        total_params += param.numel()
+    print(total_params)
+

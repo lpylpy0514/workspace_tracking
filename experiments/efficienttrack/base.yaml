@@ -53,11 +53,10 @@ MODEL:
   EXTRA_MERGER: False
   RETURN_INTER: False
   BACKBONE:
-    TYPE: vit_base_patch16_224_ce
     CHANNELS: 128
     HEADS: 4
     STRIDE: 16
-    DEPTH: 6
+    DEPTH: 3
   HEAD:
     TYPE: CENTER
     NUM_CHANNELS: 128
@@ -69,7 +68,6 @@ TRAIN:
   GIOU_WEIGHT: 2.0
   L1_WEIGHT: 5.0
   AUX_WEIGHT: 9.0
-  #AUX_TYPE: "1 output"
   GRAD_CLIP_NORM: 0.1
   LR: 0.0004
   LR_DROP_EPOCH: 240

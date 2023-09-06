@@ -94,7 +94,7 @@ def build_efficienttrack(cfg, mode='eval'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.')
     parser.add_argument('--script', type=str, default='efficienttrack', help='Name of the train script.')
-    parser.add_argument('--config', type=str, default='experiments/efficienttrack/para_base_4_BN_CLITE.yaml', help="Name of the config file.")
+    parser.add_argument('--config', type=str, default='experiments/efficienttrack/base.yaml', help="Name of the config file.")
     args = parser.parse_args()
 
     config_module = importlib.import_module("lib.config.%s.config" % args.script)
