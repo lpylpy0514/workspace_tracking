@@ -3,7 +3,7 @@
 script="efficienttrack"
 config="base"
 num_gpus=2
-num_thread=16
+num_thread=8
 # training
 python tracking/train.py --script $script --config $config --save_dir ./output --mode multiple --nproc_per_node $num_gpus --use_wandb 0
 # evaluation for lasot
