@@ -5,6 +5,30 @@ import torch.nn.functional as F
 from lib.models.layers.frozen_bn import FrozenBatchNorm2d
 
 
+class Conv2d_BN(torch.nn.Sequential):
+    def __init__(self, a, b, ks=1, stride=1, pad=0, dilation=1,
+                 groups=1, bn_weight_init=1, resolution=-10000):
+        super().__init__()
+        self.add_module('c', torch.nn.Conv2d(
+            a, b, ks, stride, pad, dilation, groups, bias=False))
+        self.add_module('bn', torch.nn.BatchNorm2d(b))
+        torch.nn.init.constant_(self.bn.weight, bn_weight_init)
+        torch.nn.init.constant_(self.bn.bias, 0)
+
+    @torch.no_grad()
+    def fuse(self):
+        c, bn = self._modules.values()
+        w = bn.weight / (bn.running_var + bn.eps)**0.5
+        w = c.weight * w[:, None, None, None]
+        b = bn.bias - bn.running_mean * bn.weight / \
+            (bn.running_var + bn.eps)**0.5
+        m = torch.nn.Conv2d(w.size(1) * self.c.groups, w.size(
+            0), w.shape[2:], stride=self.c.stride, padding=self.c.padding, dilation=self.c.dilation, groups=self.c.groups)
+        m.weight.data.copy_(w)
+        m.bias.data.copy_(b)
+        return m
+
+
 def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1,
          freeze_bn=False):
     if freeze_bn:
@@ -15,9 +39,8 @@ def conv(in_planes, out_planes, kernel_size=3, stride=1, padding=1, dilation=1,
             nn.ReLU(inplace=True))
     else:
         return nn.Sequential(
-            nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
-                      padding=padding, dilation=dilation, bias=True),
-            nn.BatchNorm2d(out_planes),
+            Conv2d_BN(in_planes, out_planes, ks=kernel_size, stride=stride,
+                      pad=padding, dilation=dilation),
             nn.ReLU(inplace=True))
 
 
