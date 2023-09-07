@@ -2,15 +2,16 @@ import os
 import sys
 import argparse
 import torch
+
+prj_path = os.path.join(os.path.dirname(__file__), '..')
+if prj_path not in sys.path:
+    sys.path.append(prj_path)
+
 from lib.utils.misc import NestedTensor
 from thop import profile
 from thop.utils import clever_format
 import time
 import importlib
-
-prj_path = os.path.join(os.path.dirname(__file__), '..')
-if prj_path not in sys.path:
-    sys.path.append(prj_path)
 
 
 def parse_args():
