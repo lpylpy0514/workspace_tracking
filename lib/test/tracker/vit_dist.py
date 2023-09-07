@@ -88,18 +88,18 @@ class Vit_dist(BaseTracker):
                 z=self.z_dict1.tensors, x=x_dict.tensors)
 
         # add hann windows
-        #for debug
-        def to_numpy(tensor):
-            return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
-        import onnxruntime
-        onnx_z = to_numpy(self.z_dict1.tensors)
-        onnx_x = to_numpy(x_dict.tensors)
-        ort_session = onnxruntime.InferenceSession('/home/ymz/newdisk2/OSTrack/simplified.onnx',
-                                                   providers=['CPUExecutionProvider'])
-        ort_inputs = {'template': onnx_z,
-                          'search': onnx_x,
-                          }
-        ort_outs = ort_session.run(None, ort_inputs)
+        # #for debug
+        # def to_numpy(tensor):
+        #     return tensor.detach().cpu().numpy() if tensor.requires_grad else tensor.cpu().numpy()
+        # import onnxruntime
+        # onnx_z = to_numpy(self.z_dict1.tensors)
+        # onnx_x = to_numpy(x_dict.tensors)
+        # ort_session = onnxruntime.InferenceSession('/home/ymz/newdisk2/OSTrack/simplified.onnx',
+        #                                            providers=['CPUExecutionProvider'])
+        # ort_inputs = {'template': onnx_z,
+        #                   'search': onnx_x,
+        #                   }
+        # ort_outs = ort_session.run(None, ort_inputs)
         pred_score_map = out_dict['score_map']
         response = self.output_window * pred_score_map
         pred_boxes = self.network.box_head.cal_bbox(response, out_dict['size_map'], out_dict['offset_map'])
