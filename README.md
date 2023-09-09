@@ -111,3 +111,10 @@ python tracking/profile_model.py --script ostrack --config vitb_384_mae_ce_32x4_
 ## Acknowledgments
 * Thanks for the [STARK](https://github.com/researchmm/Stark) and [PyTracking](https://github.com/visionml/pytracking) library, which helps us to quickly implement our ideas.
 * We use the implementation of the ViT from the [Timm](https://github.com/rwightman/pytorch-image-models) repo.  
+
+patch embedding -> levit
+LN -> BN
+MTR
+KD
+FAF
+GA
