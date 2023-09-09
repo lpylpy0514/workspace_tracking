@@ -7,10 +7,10 @@ import argparse
 import importlib
 
 class EfficientTrack(nn.Module):
-    def __init__(self, box_head, num_heads=4, depth=3, embed_dim=128, head_type="CENTER", mode="eval"):
+    def __init__(self, box_head, num_heads=4, depth=3, embed_dim=128, head_type="CENTER", mode="eval", type="AF"):
         super().__init__()
         self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
-                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages="FAF")
+                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type)
         self.box_head = box_head
         self.head_type = head_type
         if head_type == "CORNER" or head_type == "CENTER" or head_type == "CORNER_LITE":
@@ -70,7 +70,7 @@ def build_efficienttrack(cfg, mode='eval'):
     num_heads=cfg.MODEL.BACKBONE.HEADS
     head_type = cfg.MODEL.HEAD.TYPE
     box_head = build_box_head(cfg, embed_dim)
-    model = EfficientTrack(box_head, num_heads, depth, embed_dim, head_type, mode=mode)
+    model = EfficientTrack(box_head, num_heads, depth, embed_dim, head_type, mode=mode, type=cfg.MODEL.BACKBONE.TYPE)
     if cfg.MODEL.PRETRAIN_FILE and mode != 'eval':
         ckpt = torch.load(cfg.MODEL.PRETRAIN_FILE)['model']#pth用model,tar用net
         pe = ckpt['pos_embed'][:, 1:, :]

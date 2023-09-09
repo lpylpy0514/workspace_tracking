@@ -57,7 +57,7 @@ MODEL:
     HEADS: 4
     STRIDE: 16
     DEPTH: 3
-    TYPE: "AF"
+    TYPE: "FGAF"
   HEAD:
     TYPE: CENTER
     NUM_CHANNELS: 128
