@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from lib.models.efficientvit.efficientvit import EfficientViT
-from lib.models.layers.head import build_box_head
+from lib.models.layers.head_lite import build_box_head
 from lib.utils.box_ops import box_xyxy_to_cxcywh
 import argparse
 import importlib
@@ -10,7 +10,7 @@ class EfficientTrack(nn.Module):
     def __init__(self, box_head, num_heads=4, depth=3, embed_dim=128, head_type="CENTER", mode="eval"):
         super().__init__()
         self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
-                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads)
+                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages="FAF")
         self.box_head = box_head
         self.head_type = head_type
         if head_type == "CORNER" or head_type == "CENTER" or head_type == "CORNER_LITE":
