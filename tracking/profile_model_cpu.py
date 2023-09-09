@@ -84,6 +84,7 @@ if __name__ == "__main__":
     cfg = config_module.cfg
     config_module.update_config_from_file(yaml_fname)
     '''set some values'''
+    torch.set_num_threads(1)
     bs = 1
     z_sz = cfg.TEST.TEMPLATE_SIZE
     x_sz = cfg.TEST.SEARCH_SIZE
@@ -99,13 +100,17 @@ if __name__ == "__main__":
         model_module = importlib.import_module('lib.models')
         model_constructor = model_module.build_ostrack_dist
         model = model_constructor(cfg)
+        model.eval()
         template = torch.randn(bs, 3, z_sz, z_sz)
         search = torch.randn(bs, 3, x_sz, x_sz)
         evaluate_vit(model, template, search)
     elif args.script == 'efficienttrack':
+        from lib.models.efficientvit.efficientvit import replace_batchnorm
         model_module = importlib.import_module('lib.models')
         model_constructor = model_module.build_efficienttrack
         model = model_constructor(cfg)
+        model.eval()
+        replace_batchnorm(model)
         template = torch.randn(bs, 3, z_sz, z_sz)
         search = torch.randn(bs, 3, x_sz, x_sz)
         evaluate_vit(model, template, search)
