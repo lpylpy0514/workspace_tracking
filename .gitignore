@@ -16,6 +16,8 @@
 /test
 /pretrained_models
 test.py
+train.sh
+tracking/analysis_results.py
 test.onnx
 /train.sh
 tracking/analysis_results.py

@@ -51,7 +51,7 @@ def evaluate_vit(model, template, search):
 
 def evaluate_vit_separate(model, template, search):
     '''Speed Test'''
-    T_w = 50
+    T_w = 500
     T_t = 1000
     print("testing speed ...")
     z = model.forward_backbone(template, image_type='template')
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     cfg = config_module.cfg
     config_module.update_config_from_file(yaml_fname)
     '''set some values'''
-    torch.set_num_threads(1)
+    # torch.set_num_threads(1)
     bs = 1
     z_sz = cfg.TEST.TEMPLATE_SIZE
     x_sz = cfg.TEST.SEARCH_SIZE
