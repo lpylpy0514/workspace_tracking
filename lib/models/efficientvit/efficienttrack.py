@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from lib.models.efficientvit.efficientvit import EfficientViT
 from lib.models.layers.head_lite import build_box_head
 from lib.utils.box_ops import box_xyxy_to_cxcywh
 import argparse
@@ -9,7 +8,13 @@ import importlib
 class EfficientTrack(nn.Module):
     def __init__(self, box_head, num_heads=4, depth=3, embed_dim=128, head_type="CENTER", mode="eval", type="AF"):
         super().__init__()
-        self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+        if type.endswith("LN"):
+            from lib.models.efficientvit.efficientvitLN import EfficientViT
+            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+                                         embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
+        else:
+            from lib.models.efficientvit.efficientvit import EfficientViT
+            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
                                      embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type)
         self.box_head = box_head
         self.head_type = head_type
@@ -94,7 +99,7 @@ def build_efficienttrack(cfg, mode='eval'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.')
     parser.add_argument('--script', type=str, default='efficienttrack', help='Name of the train script.')
-    parser.add_argument('--config', type=str, default='experiments/efficienttrack/base.yaml', help="Name of the config file.")
+    parser.add_argument('--config', type=str, default='experiments/efficienttrack/AFLN.yaml', help="Name of the config file.")
     args = parser.parse_args()
 
     config_module = importlib.import_module("lib.config.%s.config" % args.script)
