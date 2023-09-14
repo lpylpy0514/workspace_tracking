@@ -10,13 +10,12 @@ class EfficientTrack(nn.Module):
         super().__init__()
         if type.endswith("LN"):
             from lib.models.efficientvit.efficientvitLN import EfficientViT
-            from lib.models.efficientvit.vttrack import VtTrack
-            self.back = VtTrack(template_size=128, search_size=256, patch_size=16, in_chans=3,
-                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type)
+            self.back = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
         else:
             from lib.models.efficientvit.efficientvit import EfficientViT
             self.back = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
-                                         embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
+                                         embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type)
         self.box_head = box_head
         self.head_type = head_type
         if head_type == "CORNER" or head_type == "CENTER" or head_type == "CORNER_LITE":
