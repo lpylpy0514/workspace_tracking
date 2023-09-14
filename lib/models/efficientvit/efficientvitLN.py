@@ -118,46 +118,48 @@ class FFN(torch.nn.Module):
         #FFN
         self.ln = torch.nn.LayerNorm(embed_dim)
         self.pw1 = torch.nn.Conv1d(embed_dim, hidden_dim, 1)
-        self.act = torch.nn.ReLU()
+        # self.act = torch.nn.ReLU()
+        self.act = torch.nn.GELU()
         self.pw2 = torch.nn.Conv1d(hidden_dim, embed_dim, 1)
 
     def forward(self, x):
-        x = self.pw2(self.act(self.pw1(self.ln(x.transpose(1, 2)).transpose(1, 2))))
+        x = self.pw2(self.act(self.pw1(self.ln(x).transpose(1, 2)))).transpose(1, 2)
         return x
 
+from timm.models.vision_transformer import Attention
 
-class Attention(nn.Module):
-    def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0., proj_drop=0.):
-        super().__init__()
-        self.num_heads = num_heads
-        head_dim = dim // num_heads
-        self.scale = head_dim ** -0.5
-
-        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
-        self.attn_drop = nn.Dropout(attn_drop)
-        self.proj = nn.Linear(dim, dim)
-        self.proj_drop = nn.Dropout(proj_drop)
-
-        self.ln = torch.nn.LayerNorm(dim)
-
-    def forward(self, x, return_attention=False):
-        x = self.ln(x.transpose(1, 2))
-        B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
-
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
-        attn = self.attn_drop(attn)
-
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
-        x = self.proj(x)
-        x = self.proj_drop(x)
-
-        if return_attention:
-            return x, attn
-        x = x.transpose(1, 2)
-        return x
+# class Attention(nn.Module):
+#     def __init__(self, dim, num_heads=8, qkv_bias=False, attn_drop=0., proj_drop=0.):
+#         super().__init__()
+#         self.num_heads = num_heads
+#         head_dim = dim // num_heads
+#         self.scale = head_dim ** -0.5
+#
+#         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+#         self.attn_drop = nn.Dropout(attn_drop)
+#         self.proj = nn.Linear(dim, dim)
+#         self.proj_drop = nn.Dropout(proj_drop)
+#
+#         self.ln = torch.nn.LayerNorm(dim)
+#
+#     def forward(self, x, return_attention=False):
+#         x = self.ln(x.transpose(1, 2))
+#         B, N, C = x.shape
+#         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+#         q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)
+#
+#         attn = (q @ k.transpose(-2, -1)) * self.scale
+#         attn = attn.softmax(dim=-1)
+#         attn = self.attn_drop(attn)
+#
+#         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+#         x = self.proj(x)
+#         x = self.proj_drop(x)
+#
+#         if return_attention:
+#             return x, attn
+#         x = x.transpose(1, 2)
+#         return x
 
 
 class GroupAttention(torch.nn.Module):
@@ -188,6 +190,7 @@ class EfficientViTBlock(torch.nn.Module):
     def __init__(self, type, embed_dim, kd, num_heads=8, attn_ratio=4):
         super().__init__()
         self.type = type
+        self.ln = torch.nn.LayerNorm(embed_dim)
         if self.type == 'FGAF':
             self.ffn0 = Residual(FFN(embed_dim, int(embed_dim * 2)))
             self.mixer = Residual(GroupAttention(embed_dim, kd, num_heads, attn_ratio=attn_ratio))
@@ -208,8 +211,29 @@ class EfficientViTBlock(torch.nn.Module):
             raise NotImplementedError
 
     def forward(self, x):
-        return self.ffn1(self.mixer(self.ffn0(x)))
+        return self.ffn1(self.mixer(self.ffn0(self.ln(x))))
 
+
+from timm.models.vision_transformer import Block
+def b16(n, activation):
+    return torch.nn.Sequential(
+        Conv2d_BN(3, n // 8, 3, 2, 1),
+        activation(),
+        Conv2d_BN(n // 8, n // 4, 3, 2, 1),
+        activation(),
+        Conv2d_BN(n // 4, n // 2, 3, 2, 1),
+        activation(),
+        Conv2d_BN(n // 2, n, 3, 2, 1))
+
+
+class LevitPatchEmbedding(nn.Module):
+    def __init__(self, embed_dim, activation, img_size=224, patch_size=16):
+        super().__init__()
+        self.net = b16(embed_dim, activation)
+
+    def forward(self, x):
+        x = self.net(x).flatten(2).transpose(1, 2)
+        return x
 
 class EfficientViT(torch.nn.Module):
     def __init__(self, template_size=128,
@@ -225,16 +249,18 @@ class EfficientViT(torch.nn.Module):
         super().__init__()
 
         # Patch embedding
-        self.patch_embed = torch.nn.Sequential(Conv2d_BN(in_chans, embed_dim // 8, 3, 2, 1), torch.nn.Hardswish(),
-                                               Conv2d_BN(embed_dim // 8, embed_dim // 4, 3, 2, 1,), torch.nn.Hardswish(),
-                                               Conv2d_BN(embed_dim // 4, embed_dim // 2, 3, 2, 1,), torch.nn.Hardswish(),
-                                               Conv2d_BN(embed_dim // 2, embed_dim, 3, 2, 1,))
+        # self.patch_embed = torch.nn.Sequential(Conv2d_BN(in_chans, embed_dim // 8, 3, 2, 1), torch.nn.Hardswish(),
+        #                                        Conv2d_BN(embed_dim // 8, embed_dim // 4, 3, 2, 1,), torch.nn.Hardswish(),
+        #                                        Conv2d_BN(embed_dim // 4, embed_dim // 2, 3, 2, 1,), torch.nn.Hardswish(),
+        #                                        Conv2d_BN(embed_dim // 2, embed_dim, 3, 2, 1,))
+        self.patch_embed = LevitPatchEmbedding(embed_dim, torch.nn.Hardswish)
 
         self.distillation = distillation
         self.blocks = []
         attn_ratio = embed_dim // (num_heads * key_dim)
         for i in range(depth):
-            self.blocks.append(EfficientViTBlock(stages, embed_dim, key_dim, num_heads, attn_ratio))
+            # self.blocks.append(EfficientViTBlock(stages, embed_dim, key_dim, num_heads, attn_ratio))
+            self.blocks.append(Block(embed_dim, num_heads, qkv_bias=True))
         self.blocks = torch.nn.Sequential(*self.blocks)
         self.norm = torch.nn.LayerNorm(embed_dim)
         self.pos_embed_z = torch.nn.Parameter(torch.zeros(1, (template_size // patch_size) ** 2, embed_dim))
@@ -245,9 +271,9 @@ class EfficientViT(torch.nn.Module):
         return {x for x in self.state_dict().keys() if 'attention_biases' in x}
 
     def forward(self, z, x):
-        z = self.patch_embed(z).flatten(2).transpose(1, 2) + self.pos_embed_z
-        x = self.patch_embed(x).flatten(2).transpose(1, 2) + self.pos_embed_x
-        x = torch.concat((z, x), dim=1).permute(0, 2, 1)
+        z = self.patch_embed(z) + self.pos_embed_z
+        x = self.patch_embed(x) + self.pos_embed_x
+        x = torch.concat((z, x), dim=1)  # .permute(0, 2, 1)
         res_list = []
         if self.distillation:
             for block in self.blocks:
@@ -257,7 +283,7 @@ class EfficientViT(torch.nn.Module):
         else:
             for block in self.blocks:
                 x = block(x)
-            return [self.norm(x.permute(0, 2, 1))]
+            return [self.norm(x)]
 
 
 #  replace conv+BN to conv
@@ -270,10 +296,23 @@ def replace_batchnorm(net):
 
 
 if __name__ == '__main__':
-    model = EfficientViT(depth=3, stages="FGAF")
+    model = EfficientViT(depth=3, stages="AF")
+    model.eval()
     search = torch.randn((1, 3, 256, 256))
     template = torch.randn((1, 3, 128, 128))
     res = model(template, search)
+    save_name = "test.onnx"
+    torch.onnx.export(model,  # model being run
+                      (template, search),  # model input (a tuple for multiple inputs)
+                      save_name,  # where to save the model (can be a file or file-like object)
+                      export_params=True,  # store the trained parameter weights inside the model file
+                      opset_version=14,  # the ONNX version to export the model to
+                      do_constant_folding=True,  # whether to execute constant folding for optimization
+                      input_names=['template', 'search'],  # model's input names
+                      output_names=['output1'],  # the model's output names
+                      # dynamic_axes={'input': {0: 'batch_size'},  # variable length axes
+                      #               'output': {0: 'batch_size'}}
+                      )
     # model = model.to(torch.device(0))
     # template = template.to(torch.device(0))
     # search = search.to(torch.device(0))

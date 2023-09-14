@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from lib.models.layers.head_lite import build_box_head
+from lib.models.layers.head import build_box_head
 from lib.utils.box_ops import box_xyxy_to_cxcywh
 import argparse
 import importlib
@@ -10,12 +10,13 @@ class EfficientTrack(nn.Module):
         super().__init__()
         if type.endswith("LN"):
             from lib.models.efficientvit.efficientvitLN import EfficientViT
-            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
-                                         embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
+            from lib.models.efficientvit.vttrack import VtTrack
+            self.back = VtTrack(template_size=128, search_size=256, patch_size=16, in_chans=3,
+                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type)
         else:
             from lib.models.efficientvit.efficientvit import EfficientViT
-            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
-                                     embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type)
+            self.back = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+                                         embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
         self.box_head = box_head
         self.head_type = head_type
         if head_type == "CORNER" or head_type == "CENTER" or head_type == "CORNER_LITE":
@@ -23,7 +24,7 @@ class EfficientTrack(nn.Module):
             self.feat_len_s = int(box_head.feat_sz ** 2)
 
     def forward(self, z, x):
-        features = self.backbone(z, x)
+        features = self.back(z, x)
         out = self.forward_head(features[-1], None)
         return out
 
@@ -36,15 +37,13 @@ class EfficientTrack(nn.Module):
         bs, Nq, C, HW = opt.size()
         opt_feat = opt.view(-1, C, self.feat_sz_s, self.feat_sz_s)
 
-        if self.head_type == "CORNER" or self.head_type == "CORNER_LITE":
+        if self.head_type == "CORNER":
             # run the corner head
-            # pred_box, score_map = self.box_head(opt_feat, True)
-            pred_box, score_map_tl, score_map_br = self.box_head(opt_feat, True)
+            pred_box, score_map = self.box_head(opt_feat, True)
             outputs_coord = box_xyxy_to_cxcywh(pred_box)
             outputs_coord_new = outputs_coord.view(bs, Nq, 4)
             out = {'pred_boxes': outputs_coord_new,
-                   'score_map_tl': score_map_tl,
-                   'score_map_br': score_map_br,
+                   'score_map': score_map,
                    }
             return out
 
