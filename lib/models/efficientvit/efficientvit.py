@@ -136,8 +136,11 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
 
+        self.ln = torch.nn.LayerNorm(dim)
+
     def forward(self, x, return_attention=False):
         x = x.transpose(1, 2)
+        x = self.ln(x)  # before attention useful
         B, N, C = x.shape
         qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]  # make torchscript happy (cannot use tensor as tuple)

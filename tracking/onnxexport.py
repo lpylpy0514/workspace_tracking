@@ -122,7 +122,6 @@ def build_head(in_channels, out_channels):
 
 from lib.models.vit_dist.vit_dist import LevitPatchEmbedding
 from timm.models.vision_transformer import Mlp, LayerScale, DropPath, Final, use_fused_attn
-torch.nn.MultiheadAttention
 
 class Attention(nn.Module):
     fused_attn: Final[bool]

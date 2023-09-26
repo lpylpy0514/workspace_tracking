@@ -21,3 +21,5 @@ tracking/analysis_results.py
 test.onnx
 /train.sh
 tracking/analysis_results.py
+*.onnx
+*.pth
