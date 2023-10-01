@@ -10,11 +10,11 @@ class EfficientTrack(nn.Module):
         super().__init__()
         if type.endswith("LN"):
             from lib.models.efficientvit.efficientvitLN import EfficientViT
-            self.back = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
                                      embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
         else:
             from lib.models.efficientvit.efficientvit import EfficientViT
-            self.back = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
                                          embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type)
         self.box_head = box_head
         self.head_type = head_type
@@ -23,7 +23,7 @@ class EfficientTrack(nn.Module):
             self.feat_len_s = int(box_head.feat_sz ** 2)
 
     def forward(self, z, x):
-        features = self.back(z, x)
+        features = self.backbone(z, x)
         out = self.forward_head(features[-1], None)
         return out
 
@@ -75,22 +75,38 @@ def build_efficienttrack(cfg, mode='eval'):
     box_head = build_box_head(cfg, embed_dim)
     model = EfficientTrack(box_head, num_heads, depth, embed_dim, head_type, mode=mode, type=cfg.MODEL.BACKBONE.TYPE)
     if cfg.MODEL.PRETRAIN_FILE and mode != 'eval':
-        ckpt = torch.load(cfg.MODEL.PRETRAIN_FILE)['model']#pth用model,tar用net
-        pe = ckpt['pos_embed'][:, 1:, :]
-        b_pe, hw_pe, c_pe = pe.shape
-        side_pe = int(math.sqrt(hw_pe))
-        pe_2D = pe.reshape([b_pe, side_pe, side_pe, c_pe]).permute([0, 3, 1, 2])  # b,c,h,w
-        side_num_patches_search = 16
-        side_num_patches_template = 8
-        pe_s_2D = nn.functional.interpolate(pe_2D, [side_num_patches_search, side_num_patches_search],
-                                            align_corners=True, mode='bicubic')
-        pe_s = torch.flatten(pe_s_2D.permute([0, 2, 3, 1]), 1, 2)
-        pe_t_2D = nn.functional.interpolate(pe_2D, [side_num_patches_template, side_num_patches_template],
-                                            align_corners=True, mode='bicubic')
-        pe_t = torch.flatten(pe_t_2D.permute([0, 2, 3, 1]), 1, 2)
-        ckpt['pos_embed_z'] = pe_t
-        ckpt['pos_embed_x'] = pe_s
-        missing_keys, unexpected_keys = model.load_state_dict(ckpt, strict=False)
+        if cfg.MODEL.PRETRAIN_FILE.endswith('pth'):
+            ckpt = torch.load(cfg.MODEL.PRETRAIN_FILE)['model']#pth用model,tar用net
+            pe = ckpt['pos_embed'][:, 1:, :]
+            b_pe, hw_pe, c_pe = pe.shape
+            side_pe = int(math.sqrt(hw_pe))
+            pe_2D = pe.reshape([b_pe, side_pe, side_pe, c_pe]).permute([0, 3, 1, 2])  # b,c,h,w
+            side_num_patches_search = 16
+            side_num_patches_template = 8
+            pe_s_2D = nn.functional.interpolate(pe_2D, [side_num_patches_search, side_num_patches_search],
+                                                align_corners=True, mode='bicubic')
+            pe_s = torch.flatten(pe_s_2D.permute([0, 2, 3, 1]), 1, 2)
+            pe_t_2D = nn.functional.interpolate(pe_2D, [side_num_patches_template, side_num_patches_template],
+                                                align_corners=True, mode='bicubic')
+            pe_t = torch.flatten(pe_t_2D.permute([0, 2, 3, 1]), 1, 2)
+            ckpt['pos_embed_z'] = pe_t
+            ckpt['pos_embed_x'] = pe_s
+            missing_keys, unexpected_keys = model.load_state_dict(ckpt, strict=False)
+        elif cfg.MODEL.PRETRAIN_FILE.endswith('tar'):
+            ckpt = torch.load(cfg.MODEL.PRETRAIN_FILE)['net']#pth用model,tar用net
+            pe = ckpt['pos_embed'][:, 1:, :]
+            pe_t = pe[:, 0:256, :]
+            pe_s = pe[:, 256:, :]
+            b_pe, hw_pe, c_pe = pe_t.shape
+            side_pe = int(math.sqrt(hw_pe))
+            pe_2D = pe_t.reshape([b_pe, side_pe, side_pe, c_pe]).permute([0, 3, 1, 2])  # b,c,h,w
+            side_num_patches_template = 8
+            pe_t_2D = nn.functional.interpolate(pe_2D, [side_num_patches_template, side_num_patches_template],
+                                                align_corners=True, mode='bicubic')
+            pe_t = torch.flatten(pe_t_2D.permute([0, 2, 3, 1]), 1, 2)
+            ckpt['pos_embed_z'] = pe_t
+            ckpt['pos_embed_x'] = pe_s
+            missing_keys, unexpected_keys = model.backbone.load_state_dict(ckpt, strict=False)
     return model
 
 

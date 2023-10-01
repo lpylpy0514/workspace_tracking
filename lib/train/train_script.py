@@ -70,7 +70,7 @@ def run(settings):
     elif settings.script_name == "vt":
         net = build_ostrack_dist(cfg, depth=12, mode='eval')
     elif settings.script_name == "efficienttrack":
-        net = build_efficienttrack(cfg)
+        net = build_efficienttrack(cfg, mode="train")
     else:
         raise ValueError("illegal script name")
 

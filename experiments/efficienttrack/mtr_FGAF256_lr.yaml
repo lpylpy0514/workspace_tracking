@@ -49,7 +49,7 @@ DATA:
 MODEL:
 #  PRETRAIN_FILE: "mae_pretrain_vit_base.pth"
 #  PRETRAIN_FILE: "/home/lpy/mae/output_dir/mae_128_3/checkpoint-60.pth"
-  PRETRAIN_FILE: ""
+  PRETRAIN_FILE: "/home/ymz/newdisk2/playground57/checkpoints/train/mtr/et/MTR_ep0120.pth.tar"
   EXTRA_MERGER: False
   RETURN_INTER: False
   BACKBONE:
@@ -57,7 +57,7 @@ MODEL:
     HEADS: 4
     STRIDE: 16
     DEPTH: 3
-    TYPE: "AF"
+    TYPE: "FGAF"
   HEAD:
     TYPE: CENTER
     NUM_CHANNELS: 128
@@ -82,7 +82,7 @@ TRAIN:
   WEIGHT_DECAY: 0.0001
   AMP: False
 TEST:
-  EPOCH: 296
+  EPOCH: 300
   SEARCH_FACTOR: 4.0
   SEARCH_SIZE: 256
   TEMPLATE_FACTOR: 2.0
