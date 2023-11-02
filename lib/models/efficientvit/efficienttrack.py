@@ -12,6 +12,14 @@ class EfficientTrack(nn.Module):
             from lib.models.efficientvit.efficientvitLN import EfficientViT
             self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
                                      embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
+        elif type.endswith("PE"):
+            from lib.models.efficientvit.efficientvit_pe import EfficientViT
+            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+                                         embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-2])
+        elif type.endswith("PE2"):
+            from lib.models.efficientvit.efficientvit_pe2 import EfficientViT
+            self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
+                                         embed_dim=embed_dim, depth=depth, num_heads=num_heads, stages=type[:-3])
         else:
             from lib.models.efficientvit.efficientvit import EfficientViT
             self.backbone = EfficientViT(template_size=128, search_size=256, patch_size=16, in_chans=3,
@@ -109,27 +117,29 @@ def build_efficienttrack(cfg, mode='eval'):
             missing_keys, unexpected_keys = model.backbone.load_state_dict(ckpt, strict=False)
     return model
 
+from lib.models.efficientvit.efficientvit import replace_batchnorm
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.')
     parser.add_argument('--script', type=str, default='efficienttrack', help='Name of the train script.')
-    parser.add_argument('--config', type=str, default='experiments/efficienttrack/AFLN.yaml', help="Name of the config file.")
+    parser.add_argument('--config', type=str, default='experiments/efficienttrack/FGAF768PE2.yaml', help="Name of the config file.")
     args = parser.parse_args()
 
     config_module = importlib.import_module("lib.config.%s.config" % args.script)
     cfg = config_module.cfg
     config_module.update_config_from_file(args.config)
-    model = build_efficienttrack(cfg, mode='training').to(torch.device(0))
-    template = torch.randn((1, 3, 128, 128)).to(torch.device(0))
-    search = torch.randn((1, 3, 256, 256)).to(torch.device(0))
-    # for _ in range(100):
-    #     __ = model(template, search)
-    #
-    # import time
-    # tic = time.time()
-    # for _ in range(1000):
-    #     __ = model(template, search)
-    # print(time.time() - tic)
+    model = build_efficienttrack(cfg).eval()#.to(torch.device(0))
+    template = torch.randn((1, 3, 128, 128))#.to(torch.device(0))
+    search = torch.randn((1, 3, 256, 256))#.to(torch.device(0))
+    replace_batchnorm(model)
+    for _ in range(10):
+        __ = model(template, search)
+
+    import time
+    tic = time.time()
+    for _ in range(100):
+        __ = model(template, search)
+    print(100/(time.time() - tic))
     a = 1
     from thop import profile
     from thop.utils import clever_format

@@ -13,11 +13,14 @@ from .base_functions import *
 from lib.models.ostrack import build_ostrack, build_small_ostrack
 from lib.models.efficientvit import build_efficienttrack
 from lib.models.vit_dist import build_ostrack_dist
+from lib.models.vittrack import build_vittrack
 from lib.models.mae.vit import mae_vit_l
 # forward propagation related
 from lib.train.actors import OSTrackActor
 from lib.train.actors import OSTrackDistillationActor
+from lib.train.actors import VTActor
 from lib.train.actors import VtActor
+CenterActor = VtActor
 # for import modules
 import importlib
 from lib.models.vt.clipvit import clipvittracking_base_patch16
@@ -71,6 +74,8 @@ def run(settings):
         net = build_ostrack_dist(cfg, depth=12, mode='eval')
     elif settings.script_name == "efficienttrack":
         net = build_efficienttrack(cfg, mode="train")
+    elif settings.script_name == "vittrack":
+        net = build_vittrack(cfg)
     else:
         raise ValueError("illegal script name")
 
@@ -133,6 +138,16 @@ def run(settings):
         objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
         loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT, 'focal': 1., 'cls': 1.0}
         actor = VtActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+    elif settings.script_name == "vittrack":
+        if "CORNER" in cfg.MODEL.HEAD.TYPE:
+            objective = {'giou': giou_loss, 'l1': l1_loss}
+            loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT}
+            actor = VTActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings)
+        elif "CENTER" in cfg.MODEL.HEAD.TYPE:
+            focal_loss = FocalLoss()
+            objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
+            loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT, 'focal': 1., 'cls': 1.0}
+            actor = CenterActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
     else:
         raise ValueError("illegal script name")
 
