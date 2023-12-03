@@ -3,18 +3,23 @@ from torch import nn
 from lib.models.vittrack.head import build_box_head
 from lib.models.vittrack.vit import PatchEmbedding, VisionTransformer
 from lib.utils.box_ops import box_xyxy_to_cxcywh
+from lib.models.vittrack.neck import NECK_FPN
+from lib.models.vittrack.draw import Draw
 import importlib
 import argparse
 
 
 class VitTrack(nn.Module):
-    def __init__(self, backbone, box_head, embed_dim, bottleneck=None, head_type="CENTER", simple_head=False):
+    def __init__(self, backbone, box_head, embed_dim, preprocess=None, bottleneck=None, neck_type=None,
+                 head_type="CENTER", simple_head=False):
         super().__init__()
+        self.preprocess = preprocess
         self.backbone = backbone
         if bottleneck is None:
             self.bottleneck = nn.Linear(backbone.embed_dim, embed_dim)  # the bottleneck layer
         else:
             self.bottleneck = bottleneck
+        self.neck_type = neck_type
         self.box_head = box_head
         self.head_type = head_type
         self.simple_head = simple_head
@@ -22,9 +27,15 @@ class VitTrack(nn.Module):
             self.feat_sz_s = int(box_head.feat_sz)
             self.feat_len_s = int(box_head.feat_sz ** 2)
 
-    def forward(self, z, x):
+    def forward(self, z, x, template_anno=None):
+        if self.preprocess is not None:
+            assert template_anno is not None, 'no template annotations'
+            z = self.preprocess(z, template_anno)
         feat = self.backbone(z, x)
-        feat = feat[-1].permute(1, 0, 2)  # (N, B, C)
+        if self.neck_type == 'None':
+            feat = feat[-1].permute(1, 0, 2)  # (N, B, C)
+        else:
+            feat = self.bottleneck(feat).permute(1, 0, 2)
         cls_token = feat[0:1, :, :]  # (1, B, C)
         search_feature = feat[1:self.feat_len_s+1]
         out = self.forward_head(cls_token, search_feature)
@@ -50,7 +61,7 @@ class VitTrack(nn.Module):
             out = {'pred_boxes': outputs_coord_new}
             return out, outputs_coord_new
         elif "CENTER" in self.head_type:
-            opt = (search_feature.unsqueeze(-1)).permute((0, 3, 2, 1)).contiguous()
+            opt = (search_feature.unsqueeze(-1)).permute((1, 3, 2, 0)).contiguous()
             bs, Nq, C, HW = opt.size()
             opt_feat = opt.view(-1, C, self.feat_sz_s, self.feat_sz_s)
             # run the center head
@@ -73,6 +84,14 @@ def build_vittrack(cfg):
     patchEmbedMode = cfg.MODEL.BACKBONE.PEMODE
     template_size = cfg.DATA.TEMPLATE.SIZE
     search_size = cfg.DATA.SEARCH.SIZE
+    if cfg.MODEL.PREPROCESS == 'draw':
+        preprocess = Draw(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, mode='rect',
+                          color='fixedcolor')
+    elif cfg.MODEL.PREPROCESS == 'drawpreprocess':
+        preprocess = Draw(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, mode='mask',
+                          color='learncolor')
+    else:
+        preprocess = None
     patch_embed = PatchEmbedding(embed_dim=embed_dim, activation=nn.Hardswish(), img_size=256, patch_size=16,
                                  mode=patchEmbedMode)
     backbone = VisionTransformer(template_size=template_size, search_size=search_size, patch_embedding=patch_embed,
@@ -80,11 +99,16 @@ def build_vittrack(cfg):
     box_head = build_box_head(cfg)
     head_type = cfg.MODEL.HEAD.TYPE
     simple_head = cfg.MODEL.SIMPLE_HEAD
-    if "CENTER" in head_type:
+    neck_type = cfg.MODEL.NECK.TYPE
+    if cfg.MODEL.NECK.TYPE == "FPN":
+        bottleneck = NECK_FPN(embed_dim, cfg.MODEL.HEAD.NUM_CHANNELS)
+    elif "CENTER" in head_type:
         bottleneck = torch.nn.Identity()
     else:
         bottleneck = None
-    model = VitTrack(backbone, box_head, embed_dim, head_type=head_type, simple_head=simple_head, bottleneck=bottleneck)
+
+    model = VitTrack(backbone, box_head, embed_dim, neck_type=neck_type, preprocess=preprocess,
+                     head_type=head_type, simple_head=simple_head, bottleneck=bottleneck)
     if cfg.MODEL.PRETRAIN_FILE and model.training is True:
         if cfg.MODEL.PRETRAIN_FILE.endswith('pth'):
             ckpt = torch.load(cfg.MODEL.PRETRAIN_FILE)['model']  # pth(MAE) model
@@ -100,8 +124,8 @@ def build_vittrack(cfg):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='build vit track.')
     parser.add_argument('--script', type=str, default='vittrack', help='Name of the train script.')
-    parser.add_argument('--config', type=str, default='experiments/vittrack/debug.yaml', help="Name of the config file.")
-    parser.add_argument('--device', type=str, default='cuda:0', help='Device of speed test.')
+    parser.add_argument('--config', type=str, default='experiments/vittrack/d12c256conv2.yaml', help="Name of the config file.")
+    parser.add_argument('--device', type=str, default='cpu', help='Device of speed test.')
     args = parser.parse_args()
 
     device = args.device
@@ -116,14 +140,14 @@ if __name__ == "__main__":
     template = template.to(device)
     search = search.to(device)
 
-    for _ in range(50):
+    for _ in range(200):
         __ = model(template, search)
 
     import time
     tic = time.time()
-    for _ in range(100):
+    for _ in range(500):
         __ = model(template, search)
-    print(100/(time.time() - tic))
+    print(500/(time.time() - tic))
     a = 1
     from thop import profile
     from thop.utils import clever_format

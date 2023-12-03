@@ -13,18 +13,20 @@ from lib.models.layers.head import build_box_head
 from lib.models.ostrack.vit import vit_base_patch16_224, vit_large_patch16_224
 from lib.models.ostrack.vit_ce import vit_large_patch16_224_ce, vit_base_patch16_224_ce
 from lib.utils.box_ops import box_xyxy_to_cxcywh
+from lib.models.ostrack.draw import Draw
 
 
 class OSTrack(nn.Module):
     """ This is the base class for OSTrack """
 
-    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER", mode="teacher", channels=768):
+    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER", mode="teacher", channels=768, preprocess=None):
         """ Initializes the model.
         Parameters:
             transformer: torch module of the transformer architecture.
             aux_loss: True if auxiliary decoding losses (loss at each decoder layer) are to be used.
         """
         super().__init__()
+        self.preprocess = preprocess
         self.backbone = transformer
         self.box_head = box_head
 
@@ -53,7 +55,11 @@ class OSTrack(nn.Module):
                 ce_template_mask=None,
                 ce_keep_rate=None,
                 return_last_attn=False,
+                template_anno=None,
                 ):
+        if self.preprocess is not None:
+            assert template_anno is not None, "need template annotations"
+            template = self.preprocess(template, template_anno)
         x, aux_dict = self.backbone(z=template, x=search,
                                     ce_template_mask=ce_template_mask,
                                     ce_keep_rate=ce_keep_rate,
@@ -155,11 +161,21 @@ def build_ostrack(cfg, training=True):
 
     box_head = build_box_head(cfg, hidden_dim)
 
+    if cfg.MODEL.PREPROCESS == 'draw':
+        preprocess = Draw(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, mode='rect',
+                          colormode='fixedcolor')
+    elif cfg.MODEL.PREPROCESS == 'draw_based_on_template':
+        preprocess = Draw(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, mode='mask',
+                          colormode='learncolor')
+    else:
+        preprocess = None
+
     model = OSTrack(
         backbone,
         box_head,
         aux_loss=False,
         head_type=cfg.MODEL.HEAD.TYPE,
+        preprocess=preprocess,
     )
 
     if 'OSTrack' in cfg.MODEL.PRETRAIN_FILE and training:

@@ -70,7 +70,8 @@ class OSTrackActor(BaseActor):
                             search=search_img,
                             ce_template_mask=box_mask_z,
                             ce_keep_rate=ce_keep_rate,
-                            return_last_attn=False)
+                            return_last_attn=False,
+                            template_anno=data['template_anno'][0])
 
         return out_dict
 

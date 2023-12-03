@@ -19,6 +19,7 @@ DATA:
     FACTOR: 2.0
     SCALE_JITTER: 0
     SIZE: 128
+    PREPROCESS: "rect"
 #  TRAIN:
 #    DATASETS_NAME:
 #      - GOT10K_train_full
@@ -30,10 +31,10 @@ DATA:
     DATASETS_NAME:
     - LASOT
     - GOT10K_vottrain
-    - COCO17
+#    - COCO17
     - TRACKINGNET
     DATASETS_RATIO:
-    - 1
+#    - 1
     - 1
     - 1
     - 1
@@ -51,20 +52,23 @@ MODEL:
   PRETRAIN_FILE: ""
   EXTRA_MERGER: False
   RETURN_INTER: False
+  PREPROCESS: 'draw'
   BACKBONE:
     TYPE: vit_base_patch16_224_ce
-    CHANNELS: 256
+    CHANNELS: 128
     HEADS: 4
     STRIDE: 16
     DEPTH: 12
     PEMODE: "conv2x2"
+  NECK:
+    TYPE: None
   HEAD:
     TYPE: CORNER_v3
     NUM_CHANNELS: 256
 TRAIN:
   BACKBONE_MULTIPLIER: 0.1
   DROP_PATH_RATE: 0.1
-  BATCH_SIZE: 128
+  BATCH_SIZE: 2
   EPOCH: 500
   GIOU_WEIGHT: 2.0
   L1_WEIGHT: 5.0

@@ -61,7 +61,7 @@ def run(settings):
     # cfg.depth = 3
     # Create network
     if settings.script_name == "ostrack":
-        net = build_small_ostrack(cfg)
+        net = build_ostrack(cfg)
     elif settings.script_name == 'vit_dist' and cfg.TRAIN.AUX_TYPE == "mean":
         net = build_ostrack_dist(cfg)
     elif settings.script_name == 'vit_dist' and cfg.TRAIN.AUX_TYPE == "Trblk":
@@ -83,32 +83,32 @@ def run(settings):
     net.cuda()
     n_parameters = sum(p.numel() for p in net.parameters() if p.requires_grad)
     print('number of params in model:', n_parameters)
-    if settings.script_name == "vit_dist":
-        if cfg.TRAIN.TEACHER == 'ostrack':
-            if cfg.TRAIN.AUX_TYPE == 'None':
-                pass
-            else:
-                cfg.MODEL.HEAD.NUM_CHANNELS = 256
-                TeacherWeight = "OSTrack_ep0300.pth.tar"
-                TeacherNet = build_ostrack(cfg, training=False)
-                TeacherNet.load_state_dict(torch.load(TeacherWeight, map_location='cpu')['net'], strict=True)
-                TeacherNet = TeacherNet.cuda()
-                with torch.no_grad():
-                    TeacherNet.eval()
-        elif cfg.TRAIN.TEACHER == 'MAE-L':
-            weight = "/home/lpy/OSTrack/pretrained_models/mae_pretrain_vit_large.pth"
-            TeacherNet = mae_vit_l(weight)
-            TeacherNet = TeacherNet.cuda()
-            with torch.no_grad():
-                TeacherNet.eval()
-        elif cfg.TRAIN.TEACHER == 'clip':
-            TeacherNet = clipvittracking_base_patch16(pretrained=True, search_size=256, template_size=128)
-            TeacherNet.cuda()
-            TeacherNet = TeacherNet.cuda()
-            with torch.no_grad():
-                TeacherNet.eval()
-        n_parameters = sum(p.numel() for p in net.parameters() if p.requires_grad)
-        print('number of params in model:', n_parameters)
+    # if settings.script_name == "vit_dist":
+    #     if cfg.TRAIN.TEACHER == 'ostrack':
+    #         if cfg.TRAIN.AUX_TYPE == 'None':
+    #             pass
+    #         else:
+    #             cfg.MODEL.HEAD.NUM_CHANNELS = 256
+    #             TeacherWeight = "OSTrack_ep0300.pth.tar"
+    #             TeacherNet = build_ostrack(cfg, training=False)
+    #             TeacherNet.load_state_dict(torch.load(TeacherWeight, map_location='cpu')['net'], strict=True)
+    #             TeacherNet = TeacherNet.cuda()
+    #             with torch.no_grad():
+    #                 TeacherNet.eval()
+    #     elif cfg.TRAIN.TEACHER == 'MAE-L':
+    #         weight = "/home/lpy/OSTrack/pretrained_models/mae_pretrain_vit_large.pth"
+    #         TeacherNet = mae_vit_l(weight)
+    #         TeacherNet = TeacherNet.cuda()
+    #         with torch.no_grad():
+    #             TeacherNet.eval()
+    #     elif cfg.TRAIN.TEACHER == 'clip':
+    #         TeacherNet = clipvittracking_base_patch16(pretrained=True, search_size=256, template_size=128)
+    #         TeacherNet.cuda()
+    #         TeacherNet = TeacherNet.cuda()
+    #         with torch.no_grad():
+    #             TeacherNet.eval()
+    #     n_parameters = sum(p.numel() for p in net.parameters() if p.requires_grad)
+    #     print('number of params in model:', n_parameters)
         # n_parameters = sum(p.numel() for p in TeacherNet.parameters() if p.requires_grad)
         # print('number of params in teacher:', n_parameters)
     if settings.local_rank != -1:
@@ -121,8 +121,14 @@ def run(settings):
     settings.deep_sup = getattr(cfg.TRAIN, "DEEP_SUPERVISION", False)
     settings.distill = getattr(cfg.TRAIN, "DISTILL", False)
     settings.distill_loss_type = getattr(cfg.TRAIN, "DISTILL_LOSS_TYPE", "KL")
+    settings.model_preprocess = getattr(cfg.MODEL, "PREPROCESS", "None")
     # Loss functions and Actors
-    if cfg.TRAIN.AUX_TYPE == 'None':
+    if settings.script_name == "ostrack":
+        focal_loss = FocalLoss()
+        objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
+        loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT, 'focal': 1., 'cls': 1.0, 'aux': cfg.TRAIN.AUX_WEIGHT}
+        actor = OSTrackActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+    elif cfg.TRAIN.AUX_TYPE == 'None':
         focal_loss = FocalLoss()
         objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
         loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT, 'focal': 1., 'cls': 1.0}

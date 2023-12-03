@@ -14,6 +14,7 @@ cfg.MODEL.EXTRA_MERGER = False
 cfg.MODEL.RETURN_INTER = False
 cfg.MODEL.RETURN_STAGES = []
 
+cfg.MODEL.PREPROCESS = 'None'
 # MODEL.BACKBONE
 cfg.MODEL.BACKBONE = edict()
 cfg.MODEL.BACKBONE.TYPE = "vit_base_patch16_224"

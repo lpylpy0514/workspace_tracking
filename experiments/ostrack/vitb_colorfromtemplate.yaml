@@ -40,31 +40,25 @@ DATA:
     SAMPLE_PER_EPOCH: 60000
   VAL:
     DATASETS_NAME:
-#    - GOT10K_official_val
     - GOT10K_votval
-#    - COCO17
     DATASETS_RATIO:
     - 1
     SAMPLE_PER_EPOCH: 10000
 MODEL:
-#  PRETRAIN_FILE: "mae_pretrain_vit_base.pth"
-  PRETRAIN_FILE: "/home/ymz/newdisk2/playground57/checkpoints/train/mtr/v_d12c256/MTR_ep0320.pth.tar"
+  PRETRAIN_FILE: "mae_pretrain_vit_base.pth"
+  PREPROCESS: "draw_based_on_template"
   EXTRA_MERGER: False
   RETURN_INTER: False
   BACKBONE:
-    TYPE: vit_base_patch16_224_ce
-    CHANNELS: 256
-    HEADS: 4
+    TYPE: vit_base_patch16_224
     STRIDE: 16
-    DEPTH: 12
-    PEMODE: "conv2x2"
   HEAD:
     TYPE: CENTER
     NUM_CHANNELS: 256
 TRAIN:
-  BACKBONE_MULTIPLIER: 1
+  BACKBONE_MULTIPLIER: 0.1
   DROP_PATH_RATE: 0.1
-  BATCH_SIZE: 64
+  BATCH_SIZE: 32
   EPOCH: 300
   GIOU_WEIGHT: 2.0
   L1_WEIGHT: 5.0

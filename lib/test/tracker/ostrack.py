@@ -20,7 +20,7 @@ from lib.utils.ce_utils import generate_mask_cond
 class OSTrack(BaseTracker):
     def __init__(self, params, dataset_name):
         super(OSTrack, self).__init__(params)
-        network = build_small_ostrack(params.cfg, training=False)
+        network = build_ostrack(params.cfg, training=False)
         network.load_state_dict(torch.load(self.params.checkpoint, map_location='cpu')['net'], strict=True)
         self.cfg = params.cfg
         self.network = network.cuda()
@@ -65,6 +65,7 @@ class OSTrack(BaseTracker):
 
         # save states
         self.state = info['init_bbox']
+        self.init_bbox = info['init_bbox']
         self.frame_id = 0
         if self.save_all_boxes:
             '''save all predicted boxes'''
@@ -83,7 +84,8 @@ class OSTrack(BaseTracker):
             # merge the template and the search
             # run the transformer
             out_dict = self.network.forward(
-                template=self.z_dict1.tensors, search=x_dict.tensors, ce_template_mask=self.box_mask_z)
+                template=self.z_dict1.tensors, search=x_dict.tensors, ce_template_mask=self.box_mask_z,
+                template_anno=torch.tensor(self.init_bbox).view(-1, 4).cuda())
 
         # add hann windows
         pred_score_map = out_dict['score_map']

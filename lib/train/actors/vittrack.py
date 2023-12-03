@@ -39,8 +39,10 @@ class VTActor(BaseActor):
         # do not support multi template
         assert self.settings.num_template == 1
         template_img = data['template_images'][0].view(-1, *data['template_images'].shape[2:])  # (batch, 3, 128, 128)
-
-        out_dict, _ = self.net(z=template_img, x=search_img)
+        if self.settings.model_preprocess == 'draw':
+            out_dict, _ = self.net(z=template_img, x=search_img, template_anno=data['template_anno'][0])
+        else:
+            out_dict, _ = self.net(z=template_img, x=search_img)
         # out_dict: (B, N, C), outputs_coord: (1, B, N, C)
         return out_dict
 

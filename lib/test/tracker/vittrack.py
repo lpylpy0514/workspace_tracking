@@ -46,14 +46,24 @@ class VitTrack(BaseTracker):
             self.save_path = os.path.join(self.save_dir, info['seq_name'])
             if not os.path.exists(self.save_path):
                 os.makedirs(self.save_path)
-
+        if self.cfg.DATA.TEMPLATE.PREPROCESS == 'rect':
+            import cv2
+            x1, y1, w, h = info['init_bbox']
+            cv2.rectangle(image, (int(x1), int(y1)), (int(x1 + w), int(y1 + h)), color=(0, 0, 255), thickness=3)
+            # cv2.imshow('img', image)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
         z_patch_arr, resize_factor, z_amask_arr = sample_target(image, info['init_bbox'], self.params.template_factor,
                                                     output_sz=self.params.template_size)
+        # cv2.imshow('img', z_patch_arr)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
         self.z_patch_arr = z_patch_arr
         template = self.preprocessor.process(z_patch_arr, z_amask_arr)
         with torch.no_grad():
             self.z_dict1 = template
         # save states
+        self.init_bbox = info['init_bbox']
         self.state = info['init_bbox']
         self.frame_id = 0
         if self.save_all_boxes:
@@ -70,7 +80,7 @@ class VitTrack(BaseTracker):
         with torch.no_grad():
             x_dict = search
             out_dict, _ = self.network.forward(
-                z=self.z_dict1.tensors, x=x_dict.tensors)
+                z=self.z_dict1.tensors, x=x_dict.tensors, template_anno=torch.tensor(self.init_bbox).view(-1, 4).cuda())
 
         pred_boxes = out_dict['pred_boxes'].view(-1, 4)
         # Baseline: Take the mean of all pred boxes as the final result

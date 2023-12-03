@@ -48,7 +48,7 @@ DATA:
     SAMPLE_PER_EPOCH: 10000
 MODEL:
 #  PRETRAIN_FILE: "mae_pretrain_vit_base.pth"
-  PRETRAIN_FILE: ""
+  PRETRAIN_FILE: "/home/ymz/newdisk2/playground57/checkpoints/train/mtr/v_d3c256/MTR_ep0500.pth.tar"
   EXTRA_MERGER: False
   RETURN_INTER: False
   BACKBONE:
@@ -58,6 +58,8 @@ MODEL:
     STRIDE: 16
     DEPTH: 3
     PEMODE: "conv2x2"
+  NECK:
+    TYPE: None
   HEAD:
     TYPE: CORNER_v3
     NUM_CHANNELS: 256

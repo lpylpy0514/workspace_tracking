@@ -275,6 +275,7 @@ class Corner_Predictor(nn.Module):
         else:
             return exp_x, exp_y
 
+
 class Corner_Predictor_v2(nn.Module):
     """ Corner Predictor module"""
 
@@ -351,6 +352,7 @@ class Corner_Predictor_v2(nn.Module):
                 return exp_x, exp_y, score_vec
         else:
             return exp_x, exp_y
+
 
 class Corner_Predictor_v3(nn.Module):
     """ Corner Predictor module"""
@@ -452,6 +454,7 @@ class Corner_Predictor_v3(nn.Module):
                 return exp_x, exp_y, score_vec
         else:
             return exp_x, exp_y
+
 
 class Corner_Predictor_Lite(nn.Module):
     """ Corner Predictor module (Lite version)"""

@@ -53,16 +53,16 @@ class VtActor(BaseActor):
 
         box_mask_z = None
         ce_keep_rate = None
-        if self.cfg.MODEL.BACKBONE.CE_LOC:
-            box_mask_z = generate_mask_cond(self.cfg, template_list[0].shape[0], template_list[0].device,
-                                            data['template_anno'][0])
-
-            ce_start_epoch = self.cfg.TRAIN.CE_START_EPOCH
-            ce_warm_epoch = self.cfg.TRAIN.CE_WARM_EPOCH
-            ce_keep_rate = adjust_keep_rate(data['epoch'], warmup_epochs=ce_start_epoch,
-                                                total_epochs=ce_start_epoch + ce_warm_epoch,
-                                                ITERS_PER_EPOCH=1,
-                                                base_keep_rate=self.cfg.MODEL.BACKBONE.CE_KEEP_RATIO[0])
+        # if self.cfg.MODEL.BACKBONE.CE_LOC:
+        #     box_mask_z = generate_mask_cond(self.cfg, template_list[0].shape[0], template_list[0].device,
+        #                                     data['template_anno'][0])
+        #
+        #     ce_start_epoch = self.cfg.TRAIN.CE_START_EPOCH
+        #     ce_warm_epoch = self.cfg.TRAIN.CE_WARM_EPOCH
+        #     ce_keep_rate = adjust_keep_rate(data['epoch'], warmup_epochs=ce_start_epoch,
+        #                                         total_epochs=ce_start_epoch + ce_warm_epoch,
+        #                                         ITERS_PER_EPOCH=1,
+        #                                         base_keep_rate=self.cfg.MODEL.BACKBONE.CE_KEEP_RATIO[0])
 
         if len(template_list) == 1:
             template_list = template_list[0]

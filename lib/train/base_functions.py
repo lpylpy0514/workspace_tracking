@@ -3,7 +3,7 @@ from torch.utils.data.distributed import DistributedSampler
 # datasets related
 from lib.train.dataset import Lasot, Got10k, MSCOCOSeq, ImagenetVID, TrackingNet
 from lib.train.dataset import Lasot_lmdb, Got10k_lmdb, MSCOCOSeq_lmdb, ImagenetVID_lmdb, TrackingNet_lmdb
-from lib.train.data import sampler, opencv_loader, processing, LTRLoader
+from lib.train.data import opencv_loader, processing, LTRLoader
 import lib.train.data.transforms as tfm
 from lib.utils.misc import is_main_process
 
@@ -120,7 +120,14 @@ def build_dataloaders(cfg, settings):
     settings.num_search = getattr(cfg.DATA.SEARCH, "NUMBER", 1)
     sampler_mode = getattr(cfg.DATA, "SAMPLER_MODE", "causal")
     train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False)
+    preprocess = getattr(cfg.DATA.TEMPLATE, "PREPROCESS", 'None')
     print("sampler_mode", sampler_mode)
+    if preprocess == 'None':
+        from lib.train.data import sampler
+    elif preprocess == 'rect':
+        from lib.train.data import sampler_rect as sampler
+    else:
+        raise NotImplementedError
     dataset_train = sampler.TrackingSampler(datasets=names2datasets(cfg.DATA.TRAIN.DATASETS_NAME, settings, opencv_loader),
                                             p_datasets=cfg.DATA.TRAIN.DATASETS_RATIO,
                                             samples_per_epoch=cfg.DATA.TRAIN.SAMPLE_PER_EPOCH,

@@ -230,7 +230,7 @@ class Tracker:
             output_boxes.append(state)
             # if out['confidence'] > 0.7:
             cv.rectangle(frame_disp, (state[0], state[1]), (state[2] + state[0], state[3] + state[1]),(0, 255, 0), 5)
-            cv.putText(frame_disp, str(float(out['confidence'].cpu())), (0, 100), cv.FONT_HERSHEY_TRIPLEX, 1.0, (255, 0, 0), 2)
+            # cv.putText(frame_disp, str(float(out['confidence'].cpu())), (0, 100), cv.FONT_HERSHEY_TRIPLEX, 1.0, (255, 0, 0), 2)
 
             font_color = (0, 0, 0)
             cv.putText(frame_disp, 'Tracking!', (20, 30), cv.FONT_HERSHEY_COMPLEX_SMALL, 1,

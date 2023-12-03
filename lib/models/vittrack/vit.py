@@ -102,33 +102,38 @@ class VisionTransformer(nn.Module):
             xz = blk(xz)
             res.append(xz)
         xz = self.norm(xz)
-        return [xz]
+        res[-1] = xz
+        return res
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.')
-    parser.add_argument('--device', type=str, default='cuda:0', help='Device of speed test.')
+    parser.add_argument('--device', type=str, default='cpu', help='Device of speed test.')
     args = parser.parse_args()
 
+    embed_dim = 256
+    pemode = "standard"
     device = args.device
-    patch_embed = PatchEmbedding(embed_dim=768, activation=nn.Hardswish(), img_size=256, patch_size=16, mode="conv2x2")
+    patch_embed = PatchEmbedding(embed_dim=embed_dim, activation=nn.Hardswish(), img_size=256, patch_size=16, mode=pemode)
     model = VisionTransformer(template_size=128, search_size=256, patch_embedding=patch_embed, patch_size=16,
-                              depth=12, embed_dim=768, num_heads=12, mlp_ratio=4)
+                              depth=12, embed_dim=embed_dim, num_heads=embed_dim // 64, mlp_ratio=4)
 
-    bs = 2
-    template = torch.randn((bs, 3, 128, 128))
-    search = torch.randn((bs, 3, 256, 256))
-    model = model.to(device)
-    template = template.to(device)
-    search = search.to(device)
-    # speed test
-    import time
-    for _ in range(50):
-        __ = model(template, search)
-    tic = time.time()
-    for _ in range(100):
-        __ = model(template, search)
-    print(100/(time.time() - tic))
+    bss = [1, 2, 4, 8, 16]
+    for bs in bss:
+        print("batch size is" + str(bs))
+        template = torch.randn((bs, 3, 128, 128))
+        search = torch.randn((bs, 3, 256, 256))
+        model = model.to(device)
+        template = template.to(device)
+        search = search.to(device)
+        # speed test
+        import time
+        for _ in range(50):
+            __ = model(template, search)
+        tic = time.time()
+        for _ in range(100):
+            __ = model(template, search)
+        print(bs * 100/(time.time() - tic))
     # param & macs test
     from thop import profile
     from thop.utils import clever_format
