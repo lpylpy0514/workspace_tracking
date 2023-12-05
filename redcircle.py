@@ -70,13 +70,13 @@ if __name__ == '__main__':
         template = pre.process(z_patch_arr, z_amask_arr)
 
         z_patch_arr0, resize_factor, z_amask_arr = sample_target(img0, [x1, y1, w, h], 2,
-                                                                output_sz=640)  # (x1, y1, w, h)
+                                                                output_sz=128)  # (x1, y1, w, h)
         template = pre.process(z_patch_arr, z_amask_arr)
 
         cv.imshow("search", x_patch_arr)
         cv.imshow("template", z_patch_arr)
-        img_resize = cv.resize(z_patch_arr, (512, 512))
-        cv.imshow("template0", img_resize)
+        # img_resize = cv.resize(z_patch_arr, (512, 512))
+        cv.imshow("template0", z_patch_arr0)
         # cv.waitKey(0)
         # cv.destroyAllWindows()
 

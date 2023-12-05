@@ -14,6 +14,7 @@ from lib.models.ostrack.vit import vit_base_patch16_224, vit_large_patch16_224
 from lib.models.ostrack.vit_ce import vit_large_patch16_224_ce, vit_base_patch16_224_ce
 from lib.utils.box_ops import box_xyxy_to_cxcywh
 from lib.models.ostrack.draw import Draw
+from lib.models.ostrack.embedding import Embedding
 
 
 class OSTrack(nn.Module):
@@ -39,15 +40,15 @@ class OSTrack(nn.Module):
         if self.aux_loss:
             self.box_head = _get_clones(self.box_head, 6)
 
-        self.mode = mode
-        if self.mode == "student":
-            # self.conv1 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
-            # self.conv2 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
-            # self.conv3 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
-            self.conv1 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
-            self.conv2 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
-            self.conv3 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
-            self.convs = [self.conv1, self.conv2, self.conv3]
+        # self.mode = mode
+        # if self.mode == "student":
+        #     # self.conv1 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
+        #     # self.conv2 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
+        #     # self.conv3 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
+        #     self.conv1 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
+        #     self.conv2 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
+        #     self.conv3 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
+        #     self.convs = [self.conv1, self.conv2, self.conv3]
 
 
     def forward(self, template: torch.Tensor,
@@ -57,21 +58,27 @@ class OSTrack(nn.Module):
                 return_last_attn=False,
                 template_anno=None,
                 ):
+        extra_tokens = None
         if self.preprocess is not None:
             assert template_anno is not None, "need template annotations"
-            template = self.preprocess(template, template_anno)
+            if type(self.preprocess) is Draw:
+                template = self.preprocess(template, template_anno)
+            elif type(self.preprocess) is Embedding:
+                extra_tokens = self.preprocess(template_anno)
         x, aux_dict = self.backbone(z=template, x=search,
+                                    extra_tokens=extra_tokens,
                                     ce_template_mask=ce_template_mask,
                                     ce_keep_rate=ce_keep_rate,
-                                    return_last_attn=return_last_attn, )
+                                    return_last_attn=return_last_attn,
+                                    )
 
         # Forward head
         feat_last = x
         if isinstance(x, list):
             feat_last = x[-1]
         out = self.forward_head(feat_last, None)
-        if self.mode == "student" and self.training:
-            aux_dict = self.forward_aux(aux_dict)
+        # if self.mode == "student" and self.training:
+        #     aux_dict = self.forward_aux(aux_dict)
         out.update(aux_dict)
         out['backbone_feat'] = x
         return out
@@ -167,6 +174,9 @@ def build_ostrack(cfg, training=True):
     elif cfg.MODEL.PREPROCESS == 'draw_based_on_template':
         preprocess = Draw(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, mode='mask',
                           colormode='learncolor')
+    elif cfg.MODEL.PREPROCESS == 'template_embedding':
+
+        preprocess = Embedding(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, embed_dim=768)
     else:
         preprocess = None
 

@@ -107,7 +107,7 @@ class BaseBackbone(nn.Module):
                     layer_name = f'norm{i_layer}'
                     self.add_module(layer_name, layer)
 
-    def forward_features(self, z, x):
+    def forward_features(self, z, x, extra_tokens):
         B, H, W = x.shape[0], x.shape[2], x.shape[3]
 
         x = self.patch_embed(x)
@@ -127,6 +127,8 @@ class BaseBackbone(nn.Module):
         x = combine_tokens(z, x, mode=self.cat_mode)
         if self.add_cls_token:
             x = torch.cat([cls_tokens, x], dim=1)
+        if extra_tokens is not None:
+            x = torch.cat([extra_tokens, x], dim=1)
 
         x = self.pos_drop(x)
 
@@ -140,7 +142,7 @@ class BaseBackbone(nn.Module):
         aux_dict = {"attn": None}
         return self.norm(x), aux_dict
 
-    def forward(self, z, x, **kwargs):
+    def forward(self, z, x, extra_tokens, **kwargs):
         """
         Joint feature extraction and relation modeling for the basic ViT backbone.
         Args:
@@ -151,6 +153,6 @@ class BaseBackbone(nn.Module):
             x (torch.Tensor): merged template and search region feature, [B, L_z+L_x, C]
             attn : None
         """
-        x, aux_dict = self.forward_features(z, x,)
+        x, aux_dict = self.forward_features(z, x, extra_tokens,)
 
         return x, aux_dict
