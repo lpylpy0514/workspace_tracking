@@ -15,6 +15,7 @@ from lib.models.ostrack.vit_ce import vit_large_patch16_224_ce, vit_base_patch16
 from lib.utils.box_ops import box_xyxy_to_cxcywh
 from lib.models.ostrack.draw import Draw
 from lib.models.ostrack.embedding import Embedding
+from lib.models.ostrack.clipvit import clipvittracking_base_patch16
 
 
 class OSTrack(nn.Module):
@@ -161,10 +162,16 @@ def build_ostrack(cfg, training=True):
         hidden_dim = backbone.embed_dim
         patch_start_index = 1
 
+    elif cfg.MODEL.BACKBONE.TYPE == 'clipvittracking_base_patch16':
+        pretrained = os.path.join(pretrained_path, cfg.MODEL.PRETRAIN_FILE)
+        backbone = clipvittracking_base_patch16(pretrained, search_size=256, template_size=128)
+        hidden_dim = backbone.embed_dim
+        patch_start_index = 1
     else:
         raise NotImplementedError
 
-    backbone.finetune_track(cfg=cfg, patch_start_index=patch_start_index)
+    if not pretrained.endswith('pth'):
+        backbone.finetune_track(cfg=cfg, patch_start_index=patch_start_index)
 
     box_head = build_box_head(cfg, hidden_dim)
 
