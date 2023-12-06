@@ -126,6 +126,8 @@ trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_learnrect', dat
                             run_ids=None, display_name='vitb_learnrect'))
 trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_colorfromtemplate', dataset_name=dataset_name,
                             run_ids=None, display_name='vitb_colorfromtemplate'))
+trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_templateembedding', dataset_name=dataset_name,
+                            run_ids=None, display_name='vitb_templateembedding'))
 # trackers.extend(trackerlist(name='efficienttrack', parameter_name='FGAF', dataset_name=dataset_name,
 #                             run_ids=None, display_name='FGAF'))
 # trackers.extend(trackerlist(name='efficienttrack', parameter_name='base', dataset_name=dataset_name,

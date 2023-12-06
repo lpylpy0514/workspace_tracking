@@ -170,7 +170,7 @@ def build_ostrack(cfg, training=True):
     else:
         raise NotImplementedError
 
-    if not pretrained.endswith('pth'):
+    if not pretrained.endswith('pt'):
         backbone.finetune_track(cfg=cfg, patch_start_index=patch_start_index)
 
     box_head = build_box_head(cfg, hidden_dim)

@@ -1,12 +1,12 @@
 #!/bin/bash
 # preprocess
-source /root/anaconda3/bin/activate seqtrackv2
-pip install wandb
-pip install thop
-cd /18353470163/lpy/workspace_tracking
+#source /root/anaconda3/bin/activate seqtrackv2
+#pip install wandb
+#pip install thop
+#cd /18353470163/lpy/workspace_tracking
 # about your tracker
 script="ostrack"
-config="vitb_templateembedding"
+config="vitb_templateembedding_b64"
 num_gpus=2
 num_thread=8
 
