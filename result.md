@@ -340,17 +340,21 @@ freeze backbone的实验对比？
 
 | model                  | pretrain | average      | lasot | trackingnet | got10k |
 | ---------------------- | -------- | ------------ | ----- | ----------- | ------ |
-| ostrack(no ce)         | MAE      | 75.07        | 68.7  | 82.9        | 73.6   |
+| ostrack(no ce)(32*4)   | MAE      | 75.07        | 68.7  | 82.9        | 73.6   |
 | baseline(64*2)         | MAE      | 75.14        | 68.53 | 83.60       | 73.3   |
 | baseline(32*2)         | MAE      | 74.72        | 68.29 | 83.19       | 72.7   |
 | fixed-learn-rect(64*2) | MAE      | 74.74(-0.4)  | 68.01 | 83.01       | 73.2   |
 | templatecolor(64*2)    | MAE      | 75.14(+0.0)  | 68.91 | 83.11       | 73.4   |
 | templateembed(32*2)    | MAE      | 75.00(+0.28) | 68.55 | 83.54       | 72.9   |
-| templateembed(64*2)    | MAE      |              |       |             |        |
-| templatecolor(64*2)    | CLIP     |              |       |             |        |
-| search embed(64*2)     |          |              |       |             |        |
+| templateembed(64*2)    | MAE      | 75.25(+0.11) | 68.95 | 83.59       | 73.2   |
+| templatecolor(64*2)    | CLIP     |              | 65.86 |             | 69.1   |
+| search embed(64*2)     | MAE      |              |       |             |        |
+| search draw            |          |              |       |             |        |
+| ViPT draw              |          |              |       |             |        |
 
-templateembed操作失误，batch没对齐
+crop 用原图的均值补充剩余部分。
+
+
 
 
 

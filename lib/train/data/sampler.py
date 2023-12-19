@@ -148,14 +148,20 @@ class TrackingSampler(torch.utils.data.Dataset):
             try:
                 template_frames, template_anno, meta_obj_train = dataset.get_frames(seq_id, template_frame_ids, seq_info_dict)
                 search_frames, search_anno, meta_obj_test = dataset.get_frames(seq_id, search_frame_ids, seq_info_dict)
+                past_search_frames, past_search_anno, past_meta_obj_test = dataset.get_frames(seq_id, [search_frame_ids[0] - 1], seq_info_dict)
 
                 H, W, _ = template_frames[0].shape
                 template_masks = template_anno['mask'] if 'mask' in template_anno else [torch.zeros((H, W))] * self.num_template_frames
                 search_masks = search_anno['mask'] if 'mask' in search_anno else [torch.zeros((H, W))] * self.num_search_frames
+                past_search_masks = past_search_anno['mask'] if 'mask' in past_search_anno else [torch.zeros(
+                    (H, W))] * self.num_search_frames
 
                 data = TensorDict({'template_images': template_frames,
                                    'template_anno': template_anno['bbox'],
                                    'template_masks': template_masks,
+                                   'past_search_images': past_search_frames,
+                                   'past_search_anno': past_search_anno['bbox'],
+                                   'past_search_masks': past_search_masks,
                                    'search_images': search_frames,
                                    'search_anno': search_anno['bbox'],
                                    'search_masks': search_masks,

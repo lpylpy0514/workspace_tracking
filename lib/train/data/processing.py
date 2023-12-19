@@ -97,6 +97,8 @@ class STARKProcessing(BaseProcessing):
                 image=data['template_images'], bbox=data['template_anno'], mask=data['template_masks'])
             data['search_images'], data['search_anno'], data['search_masks'] = self.transform['joint'](
                 image=data['search_images'], bbox=data['search_anno'], mask=data['search_masks'], new_roll=False)
+            data['past_search_images'], data['past_search_anno'], data['past_search_masks'] = self.transform['joint'](
+                image=data['past_search_images'], bbox=data['past_search_anno'], mask=data['past_search_masks'], new_roll=False)
 
         for s in ['template', 'search']:
             assert self.mode == 'sequence' or len(data[s + '_images']) == 1, \
@@ -122,6 +124,24 @@ class STARKProcessing(BaseProcessing):
             data[s + '_images'], data[s + '_anno'], data[s + '_att'], data[s + '_masks'] = self.transform[s](
                 image=crops, bbox=boxes, att=att_mask, mask=mask_crops, joint=False)
 
+            if s == "search":
+                past_crops, past_boxes, past_att_mask, past_mask_crops = prutils.jittered_center_crop(data['past_' + s + '_images'], jittered_anno,
+                                                                                  data['past_' + s + '_anno'],
+                                                                                  self.search_area_factor[s],
+                                                                                  self.output_sz[s],
+                                                                                  masks=data['past_' + s + '_masks'])
+                data['past_' + s + '_images'], data['past_' + s + '_anno'], data['past_' + s + '_att'], data['past_' + s + '_masks'] = self.transform[s](
+                    image=past_crops, bbox=past_boxes, att=past_att_mask, mask=past_mask_crops, joint=False)
+                # visualize
+                # import cv2
+                # image = crops[0]
+                # x, y, w, h = boxes[0][:] * self.output_sz[s]
+                # cv2.rectangle(image, (int(x), int(y)), (int(x + w), int(y + h)), color=(0, 0, 255), thickness=1)
+                # x, y, w, h = past_boxes[0][:] * self.output_sz[s]
+                # cv2.rectangle(image, (int(x), int(y)), (int(x + w), int(y + h)), color=(255, 0, 0), thickness=1)
+                # cv2.imshow('search', image)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()
             # 2021.1.9 Check whether elements in data[s + '_att'] is all 1
             # Note that type of data[s + '_att'] is tuple, type of ele is torch.tensor
             for ele in data[s + '_att']:

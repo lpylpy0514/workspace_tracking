@@ -102,32 +102,36 @@ dataset_name = 'lasot'
 #                             run_ids=None, display_name='FGAF256PE2_mtr200'))
 # trackers.extend(trackerlist(name='efficienttrack', parameter_name='FGAF256PE2_mtr360', dataset_name=dataset_name,
 #                             run_ids=None, display_name='FGAF256PE2_mtr360'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2'))
 # trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr320', dataset_name=dataset_name,
 #                             run_ids=None, display_name='d12c256conv2_mtr320'))
 # trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr320_lr1', dataset_name=dataset_name,
 #                             run_ids=None, display_name='d12c256conv2_mtr320_lr1'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2_mtr_lr1'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2_mtr'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_standard', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2_mtr_standard'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1_FPN', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2_mtr_lr1_FPN'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_centerhead', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2_mtr_centerhead'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1_rect', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2_mtr_lr1_rect'))
-trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1_learnrect', dataset_name=dataset_name,
-                            run_ids=None, display_name='d12c256conv2_mtr_lr1_learnrect'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_learnrect', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_learnrect'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_colorfromtemplate', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_colorfromtemplate'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_templateembedding', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_templateembedding'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2_mtr_lr1'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2_mtr'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_standard', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2_mtr_standard'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1_FPN', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2_mtr_lr1_FPN'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_centerhead', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2_mtr_centerhead'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1_rect', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2_mtr_lr1_rect'))
+# trackers.extend(trackerlist(name='vittrack', parameter_name='d12c256conv2_mtr_lr1_learnrect', dataset_name=dataset_name,
+#                             run_ids=None, display_name='d12c256conv2_mtr_lr1_learnrect'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_learnrect', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_learnrect'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_colorfromtemplate', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_colorfromtemplate'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_templateembedding', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_templateembedding'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_templateembedding_b64', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_templateembedding_b64'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_colorfromtemplate_clip', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_colorfromtemplate_clip'))
 # trackers.extend(trackerlist(name='efficienttrack', parameter_name='FGAF', dataset_name=dataset_name,
 #                             run_ids=None, display_name='FGAF'))
 # trackers.extend(trackerlist(name='efficienttrack', parameter_name='base', dataset_name=dataset_name,

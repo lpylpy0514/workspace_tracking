@@ -14,7 +14,7 @@ from lib.models.ostrack.vit import vit_base_patch16_224, vit_large_patch16_224
 from lib.models.ostrack.vit_ce import vit_large_patch16_224_ce, vit_base_patch16_224_ce
 from lib.utils.box_ops import box_xyxy_to_cxcywh
 from lib.models.ostrack.draw import Draw
-from lib.models.ostrack.embedding import Embedding
+from lib.models.ostrack.embedding import Embedding, SearchEmbedding
 from lib.models.ostrack.clipvit import clipvittracking_base_patch16
 
 
@@ -58,14 +58,19 @@ class OSTrack(nn.Module):
                 ce_keep_rate=None,
                 return_last_attn=False,
                 template_anno=None,
+                past_search_anno=None,
                 ):
         extra_tokens = None
         if self.preprocess is not None:
-            assert template_anno is not None, "need template annotations"
             if type(self.preprocess) is Draw:
+                assert template_anno is not None, "need template annotations"
                 template = self.preprocess(template, template_anno)
             elif type(self.preprocess) is Embedding:
+                assert template_anno is not None, "need template annotations"
                 extra_tokens = self.preprocess(template_anno)
+            elif type(self.preprocess) is SearchEmbedding:
+                assert past_search_anno is not None, "need past search annotations"
+                extra_tokens = self.preprocess(past_search_anno)
         x, aux_dict = self.backbone(z=template, x=search,
                                     extra_tokens=extra_tokens,
                                     ce_template_mask=ce_template_mask,
@@ -184,6 +189,8 @@ def build_ostrack(cfg, training=True):
     elif cfg.MODEL.PREPROCESS == 'template_embedding':
 
         preprocess = Embedding(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, embed_dim=768)
+    elif cfg.MODEL.PREPROCESS == 'search_embedding':
+        preprocess = SearchEmbedding(search_size=cfg.DATA.SEARCH.SIZE, embed_dim=768)
     else:
         preprocess = None
 
