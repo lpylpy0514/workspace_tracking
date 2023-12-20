@@ -13,22 +13,25 @@ from lib.models.layers.head import build_box_head
 from lib.models.ostrack.vit import vit_base_patch16_224, vit_large_patch16_224
 from lib.models.ostrack.vit_ce import vit_large_patch16_224_ce, vit_base_patch16_224_ce
 from lib.utils.box_ops import box_xyxy_to_cxcywh
-from lib.models.ostrack.draw import Draw
+from lib.models.ostrack.draw import Draw, Color
 from lib.models.ostrack.embedding import Embedding, SearchEmbedding
+from lib.models.ostrack.preprocess import build_preprocess
 from lib.models.ostrack.clipvit import clipvittracking_base_patch16
 
 
 class OSTrack(nn.Module):
     """ This is the base class for OSTrack """
 
-    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER", mode="teacher", channels=768, preprocess=None):
+    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER", mode="teacher", channels=768,
+                 template_preprocess=None, search_preprocess=None):
         """ Initializes the model.
         Parameters:
             transformer: torch module of the transformer architecture.
             aux_loss: True if auxiliary decoding losses (loss at each decoder layer) are to be used.
         """
         super().__init__()
-        self.preprocess = preprocess
+        self.template_preprocess = template_preprocess
+        self.search_preprocess = search_preprocess
         self.backbone = transformer
         self.box_head = box_head
 
@@ -41,17 +44,6 @@ class OSTrack(nn.Module):
         if self.aux_loss:
             self.box_head = _get_clones(self.box_head, 6)
 
-        # self.mode = mode
-        # if self.mode == "student":
-        #     # self.conv1 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
-        #     # self.conv2 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
-        #     # self.conv3 = nn.Conv1d(in_channels=channels, out_channels=768, kernel_size=1)
-        #     self.conv1 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
-        #     self.conv2 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
-        #     self.conv3 = nn.Conv1d(in_channels=channels, out_channels=1024, kernel_size=1)
-        #     self.convs = [self.conv1, self.conv2, self.conv3]
-
-
     def forward(self, template: torch.Tensor,
                 search: torch.Tensor,
                 ce_template_mask=None,
@@ -61,16 +53,23 @@ class OSTrack(nn.Module):
                 past_search_anno=None,
                 ):
         extra_tokens = None
-        if self.preprocess is not None:
-            if type(self.preprocess) is Draw:
-                assert template_anno is not None, "need template annotations"
-                template = self.preprocess(template, template_anno)
-            elif type(self.preprocess) is Embedding:
-                assert template_anno is not None, "need template annotations"
-                extra_tokens = self.preprocess(template_anno)
-            elif type(self.preprocess) is SearchEmbedding:
-                assert past_search_anno is not None, "need past search annotations"
-                extra_tokens = self.preprocess(past_search_anno)
+        if self.template_preprocess is not None:
+            assert template_anno is not None, "need template annotations"
+            if type(self.template_preprocess) is Draw:
+                template = self.template_preprocess(template, template_anno)
+            elif type(self.template_preprocess) is Embedding:
+                extra_tokens = self.template_preprocess(template_anno)
+
+        if self.search_preprocess is not None:
+            assert past_search_anno is not None, "need search annotations"
+            if type(self.search_preprocess) is Draw:
+                search = self.search_preprocess(search, past_search_anno)
+            elif type(self.search_preprocess) is Embedding:
+                if extra_tokens is None:
+                    extra_tokens = self.search_preprocess(past_search_anno)
+                else:
+                    extra_tokens = torch.concat((extra_tokens, self.search_preprocess(past_search_anno)), dim=1)
+
         x, aux_dict = self.backbone(z=template, x=search,
                                     extra_tokens=extra_tokens,
                                     ce_template_mask=ce_template_mask,
@@ -180,26 +179,49 @@ def build_ostrack(cfg, training=True):
 
     box_head = build_box_head(cfg, hidden_dim)
 
-    if cfg.MODEL.PREPROCESS == 'draw':
-        preprocess = Draw(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, mode='rect',
-                          colormode='fixedcolor')
-    elif cfg.MODEL.PREPROCESS == 'draw_based_on_template':
-        preprocess = Draw(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, mode='mask',
-                          colormode='learncolor')
-    elif cfg.MODEL.PREPROCESS == 'template_embedding':
-
-        preprocess = Embedding(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, embed_dim=768)
-    elif cfg.MODEL.PREPROCESS == 'search_embedding':
-        preprocess = SearchEmbedding(search_size=cfg.DATA.SEARCH.SIZE, embed_dim=768)
+    # if cfg.MODEL.PREPROCESS == 'draw':
+    #     color = Color(colormode="learn_color")
+    #     preprocess = Draw(image_size=cfg.DATA.TEMPLATE.SIZE, drawmode='rect', color=color)
+    # elif cfg.MODEL.PREPROCESS == 'draw_based_on_template':
+    #     net = build_preprocess(image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
+    #     color = Color(colormode="generate_color", net=net)
+    #     preprocess = Draw(image_size=cfg.DATA.TEMPLATE.SIZE, drawmode='mask', color=color)
+    # elif cfg.MODEL.PREPROCESS == 'draw_based_on_search':
+    #     net = build_preprocess(image_size=cfg.DATA.SEARCH.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
+    #     color = Color(colormode="generate_color", net=net)
+    #     preprocess = Draw(image_size=cfg.DATA.SEARCH.SIZE, drawmode='mask', color=color)
+    # elif cfg.MODEL.PREPROCESS == 'template_embedding':
+    #     preprocess = Embedding(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR, embed_dim=768)
+    # elif cfg.MODEL.PREPROCESS == 'search_embedding':
+    #     preprocess = SearchEmbedding(search_size=cfg.DATA.SEARCH.SIZE, embed_dim=768)
+    # else:
+    #     preprocess = None
+    if cfg.MODEL.PROCESS.TEMPLATE == "draw_based_on_template":
+        net = build_preprocess(image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
+        color = Color(colormode="generate_color", net=net)
+        template_preprocess = Draw(image_size=cfg.DATA.TEMPLATE.SIZE, drawmode='mask', color=color)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "template_embedding":
+        template_preprocess = Embedding(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR,
+                               embed_dim=768)
     else:
-        preprocess = None
+        template_preprocess = None
+
+    if cfg.MODEL.PROCESS.SEARCH == "draw_based_on_search":
+        net = build_preprocess(image_size=cfg.DATA.SEARCH.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
+        color = Color(colormode="generate_color", net=net)
+        search_preprocess = Draw(image_size=cfg.DATA.SEARCH.SIZE, drawmode='mask', color=color)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "template_embedding":
+        search_preprocess = SearchEmbedding(search_size=cfg.DATA.SEARCH.SIZE, embed_dim=768)
+    else:
+        search_preprocess = None
 
     model = OSTrack(
         backbone,
         box_head,
         aux_loss=False,
         head_type=cfg.MODEL.HEAD.TYPE,
-        preprocess=preprocess,
+        template_preprocess=template_preprocess,
+        search_preprocess=search_preprocess,
     )
 
     if 'OSTrack' in cfg.MODEL.PRETRAIN_FILE and training:
@@ -226,7 +248,7 @@ def build_small_ostrack(cfg, training=True):
         backbone = vit_base_patch16_224_ce(pretrained, drop_path_rate=cfg.TRAIN.DROP_PATH_RATE,
                                            ce_loc=cfg.MODEL.BACKBONE.CE_LOC,
                                            ce_keep_ratio=cfg.MODEL.BACKBONE.CE_KEEP_RATIO,
-                                           depth=3, 
+                                           depth=3,
                                            channel=cfg.MODEL.BACKBONE.CHANNELS,
                                            heads=cfg.MODEL.BACKBONE.HEADS
                                            )

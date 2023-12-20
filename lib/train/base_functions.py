@@ -120,14 +120,14 @@ def build_dataloaders(cfg, settings):
     settings.num_search = getattr(cfg.DATA.SEARCH, "NUMBER", 1)
     sampler_mode = getattr(cfg.DATA, "SAMPLER_MODE", "causal")
     train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False)
-    preprocess = getattr(cfg.DATA.TEMPLATE, "PREPROCESS", 'None')
+    # preprocess = getattr(cfg.DATA.TEMPLATE, "PREPROCESS", 'None')
     print("sampler_mode", sampler_mode)
-    if preprocess == 'None':
-        from lib.train.data import sampler
-    elif preprocess == 'rect':
-        from lib.train.data import sampler_rect as sampler
-    else:
-        raise NotImplementedError
+    # if preprocess == 'None':
+    from lib.train.data import sampler
+    # elif preprocess == 'rect':
+    #     from lib.train.data import sampler_rect as sampler
+    # else:
+    #     raise NotImplementedError
     dataset_train = sampler.TrackingSampler(datasets=names2datasets(cfg.DATA.TRAIN.DATASETS_NAME, settings, opencv_loader),
                                             p_datasets=cfg.DATA.TRAIN.DATASETS_RATIO,
                                             samples_per_epoch=cfg.DATA.TRAIN.SAMPLE_PER_EPOCH,

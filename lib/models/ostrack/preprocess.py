@@ -61,9 +61,9 @@ class Preprocess(nn.Module):
         return color, transparency
 
 
-def build_preprocess(template_size, patch_size, embed_dim, depth, output_dim):
-    patch_embedding = PatchEmbedding(embed_dim, template_size, patch_size)
-    preprocess = Preprocess(template_size, patch_embedding, patch_size, embed_dim=embed_dim,
+def build_preprocess(image_size, patch_size, embed_dim, depth, output_dim):
+    patch_embedding = PatchEmbedding(embed_dim, image_size, patch_size)
+    preprocess = Preprocess(image_size, patch_embedding, patch_size, embed_dim=embed_dim,
                             depth=depth, output_dim=output_dim)
     return preprocess
 
