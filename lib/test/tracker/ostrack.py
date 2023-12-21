@@ -78,6 +78,10 @@ class OSTrack(BaseTracker):
         x_patch_arr, resize_factor, x_amask_arr = sample_target(image, self.state, self.params.search_factor,
                                                                 output_sz=self.params.search_size)  # (x1, y1, w, h)
         search = self.preprocessor.process(x_patch_arr, x_amask_arr)
+        past_search_anno = torch.zeros((1, 4))
+        past_search_anno[:, 2] = torch.sqrt(self.state[2] / self.state[3]) / self.params.search_factor
+        past_search_anno[:, 3] = torch.sqrt(self.state[3] / self.state[2]) / self.params.search_factor
+        past_search_anno[0:2] = 0.5 - past_search_anno[2:4]
 
         with torch.no_grad():
             x_dict = search
@@ -85,7 +89,9 @@ class OSTrack(BaseTracker):
             # run the transformer
             out_dict = self.network.forward(
                 template=self.z_dict1.tensors, search=x_dict.tensors, ce_template_mask=self.box_mask_z,
-                template_anno=torch.tensor(self.init_bbox).view(-1, 4).cuda())
+                template_anno=torch.tensor(self.init_bbox).view(-1, 4).cuda(),
+                past_search_anno=past_search_anno.cuda(),
+            )
 
         # add hann windows
         pred_score_map = out_dict['score_map']
