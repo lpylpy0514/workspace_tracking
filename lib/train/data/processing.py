@@ -136,15 +136,15 @@ class STARKProcessing(BaseProcessing):
                 data['past_' + s + '_images'], data['past_' + s + '_anno'], data['past_' + s + '_att'], data['past_' + s + '_masks'] = self.transform[s](
                     image=past_crops, bbox=past_boxes, att=past_att_mask, mask=past_mask_crops, joint=False)
                 # visualize
-                import cv2
-                image = crops[0]
-                x, y, w, h = boxes[0][:] * self.output_sz[s]
-                cv2.rectangle(image, (int(x), int(y)), (int(x + w), int(y + h)), color=(0, 0, 255), thickness=1)
-                x, y, w, h = past_boxes[0][:] * self.output_sz[s]
-                cv2.rectangle(image, (int(x), int(y)), (int(x + w), int(y + h)), color=(255, 0, 0), thickness=1)
-                cv2.imshow('search', image)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+                # import cv2
+                # image = crops[0]
+                # x, y, w, h = boxes[0][:] * self.output_sz[s]
+                # cv2.rectangle(image, (int(x), int(y)), (int(x + w), int(y + h)), color=(0, 0, 255), thickness=1)
+                # x, y, w, h = past_boxes[0][:] * self.output_sz[s]
+                # cv2.rectangle(image, (int(x), int(y)), (int(x + w), int(y + h)), color=(255, 0, 0), thickness=1)
+                # cv2.imshow('search', image)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()
             # 2021.1.9 Check whether elements in data[s + '_att'] is all 1
             # Note that type of data[s + '_att'] is tuple, type of ele is torch.tensor
             for ele in data[s + '_att']:
