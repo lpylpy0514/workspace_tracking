@@ -6,7 +6,7 @@ pip install thop
 cd /18353470163/lpy/workspace_tracking
 # about your tracker
 script="ostrack"
-config="drawtwo"
+config="vitb_jittered_search_embedding"
 num_gpus=2
 num_thread=8
 
