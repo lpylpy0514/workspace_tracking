@@ -210,7 +210,7 @@ def build_ostrack(cfg, training=True):
         net = build_preprocess(image_size=cfg.DATA.SEARCH.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
         color = Color(colormode="generate_color", net=net)
         search_preprocess = Draw(image_size=cfg.DATA.SEARCH.SIZE, drawmode='mask', color=color)
-    elif cfg.MODEL.PROCESS.TEMPLATE == "template_embedding":
+    elif cfg.MODEL.PROCESS.TEMPLATE == "search_embedding":
         search_preprocess = SearchEmbedding(search_size=cfg.DATA.SEARCH.SIZE, embed_dim=768)
     else:
         search_preprocess = None

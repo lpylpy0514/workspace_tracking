@@ -47,8 +47,8 @@ DATA:
 MODEL:
   PRETRAIN_FILE: "mae_pretrain_vit_base.pth"
   PROCESS:
-    TEMPLATE: "draw_based_on_template"
-    SEARCH: "draw_based_on_search"
+    TEMPLATE: "template_embedding"
+    SEARCH: "search_embedding"
   EXTRA_MERGER: False
   RETURN_INTER: False
   BACKBONE:
