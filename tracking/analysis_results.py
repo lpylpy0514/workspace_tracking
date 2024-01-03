@@ -136,8 +136,8 @@ dataset_name = 'lasot'
 #                             run_ids=None, display_name='FGAF'))
 # trackers.extend(trackerlist(name='efficienttrack', parameter_name='base', dataset_name=dataset_name,
 #                             run_ids=None, display_name='base'))
-# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_256_mae_ce_32x4_ep300', dataset_name=dataset_name,
-#                             run_ids=None, display_name='OSTrack256'))
+trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_jittered_search_embedding', dataset_name=dataset_name,
+                            run_ids=None, display_name='vitb_jittered_search_embedding'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_384_mae_ce_32x4_ep300', dataset_name=dataset_name,
 #                             run_ids=None, display_name='OSTrack384'))
 

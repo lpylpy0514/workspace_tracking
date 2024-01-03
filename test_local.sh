@@ -2,7 +2,7 @@
 
 # about your tracker
 script="ostrack"
-config="vitb_drawtwo"
+config="vitb_jittered_embedding"
 num_gpus=2
 num_thread=8
 

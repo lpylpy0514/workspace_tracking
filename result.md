@@ -338,29 +338,35 @@ freeze backbone的实验对比？
 
 原图画框or template画框？
 
-| model                  | pretrain | average      | lasot | trackingnet | got10k    |
-| ---------------------- | -------- | ------------ | ----- | ----------- | --------- |
-| ostrack(no ce)(32*4)   | MAE      | 75.07        | 68.7  | 82.9        | 73.6      |
-| baseline(64*2)         | MAE      | 75.14        | 68.53 | 83.60       | 73.3      |
-| baseline(32*2)         | MAE      | 74.72        | 68.29 | 83.19       | 72.7      |
-| fixed-learn-rect(64*2) | MAE      | 74.74(-0.4)  | 68.01 | 83.01       | 73.2      |
-| templatecolor(64*2)    | MAE      | 75.14(+0.0)  | 68.91 | 83.11       | 73.4      |
-| templateembed(32*2)    | MAE      | 75.00(+0.28) | 68.55 | 83.54       | 72.9      |
-| templateembed(64*2)    | MAE      | 75.25(+0.11) | 68.95 | 83.59       | 73.2      |
-| templatecolor(64*2)    | CLIP     |              | 65.86 |             | 69.1      |
-| search embed(64*2)     | MAE      |              |       |             | 67.3(-6)  |
-| search & template draw |          |              |       |             | 62.8(-11) |
-| jittered draw          |          |              |       |             |           |
-| jittered embedding     |          |              |       |             |           |
-| ViPT draw              |          |              |       |             |           |
+| model                  | pretrain | average      | lasot        | trackingnet | got10k     |
+| ---------------------- | -------- | ------------ | ------------ | ----------- | ---------- |
+| ostrack(no ce)(32*4)   | MAE      | 75.07        | 68.7         | 82.9        | 73.6       |
+| baseline(64*2)         | MAE      | 75.14        | 68.53        | 83.60       | 73.3       |
+| baseline(32*2)         | MAE      | 74.72        | 68.29        | 83.19       | 72.7       |
+| fixed-learn-rect(64*2) | MAE      | 74.74(-0.4)  | 68.01        | 83.01       | 73.2       |
+| templatecolor(64*2)    | MAE      | 75.14(+0.0)  | 68.91        | 83.11       | 73.4       |
+| templateembed(32*2)    | MAE      | 75.00(+0.28) | 68.55        | 83.54       | 72.9       |
+| templateembed(64*2)    | MAE      | 75.25(+0.11) | 68.95        | 83.59       | 73.2       |
+| templatecolor(64*2)    | CLIP     |              | 65.86        |             | 69.1       |
+| search embed(64*2)     | MAE      |              |              |             | 67.3(-6)   |
+| search & template draw |          |              |              |             | 62.8(-11)  |
+| jittered draw          |          |              | 60.31(-8.22) | 80.70(-2.9) | 71.9(-1.4) |
+| jittered embedding     |          |              |              |             |            |
+| 冻结ostrack主体        |          |              |              |             |            |
+| ViPT draw              |          |              |              |             |            |
 
 crop 用原图的均值补充剩余部分。
 
 search embed中训练过程中采用了上一帧的真值，模型过于依赖上一帧图像的真值，如果上一帧给的不准效果非常差。
 
+jitter 运动信息采用标准搜索区域抖动的1/4强度进行
 
+lasot测试集难度偏大，丢失后跟随上一帧框完全无法找回。所以掉点最为严重
 
+ViPT设计方案：
 
+https://arxiv.org/pdf/2312.03818.pdf
 
+模板采用SAM生成mask作为第四通道输入
 
-
+采用训练完成的ostrack进行运动信息加强，类似于artrack的两阶段训练。
