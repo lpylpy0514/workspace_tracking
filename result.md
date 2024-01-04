@@ -370,3 +370,38 @@ https://arxiv.org/pdf/2312.03818.pdf
 模板采用SAM生成mask作为第四通道输入
 
 采用训练完成的ostrack进行运动信息加强，类似于artrack的两阶段训练。
+
+ostrack ckpt + template draw
+
+ostrack ckpt + alpha track
+
+alpha通道box，采用01代表内部外部/采用可学习的两个数据表示？
+
+alpha通道采用SAM生成mask
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

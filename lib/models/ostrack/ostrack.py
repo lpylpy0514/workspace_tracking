@@ -52,26 +52,38 @@ class OSTrack(nn.Module):
                 template_anno=None,
                 past_search_anno=None,
                 ):
-        extra_tokens = None
+        # extra_tokens = None
+        B, C, W, H = template.shape
+        extra_features = {}
         if self.template_preprocess is not None:
             assert template_anno is not None, "need template annotations"
             if type(self.template_preprocess) is Draw:
                 template = self.template_preprocess(template, template_anno)
             elif type(self.template_preprocess) is Embedding:
-                extra_tokens = self.template_preprocess(template_anno)
+                extra_features['template_token'] = self.template_preprocess(template_anno)
+            elif type(self.template_preprocess) is torch.nn.Conv2d:
+                # generate mesh-grid
+                assert H == W
+                image_size = H
+                indice = torch.arange(0, W).view(-1, 1)
+                coord_x = indice.repeat((image_size, 1)).view(image_size, image_size).float().to(template.device)
+                coord_y = indice.repeat((1, image_size)).view(image_size, image_size).float().to(template.device)
+                x1, y1, w, h = (template_anno.view(B, 4, 1, 1) * image_size).unbind(1)
+                x2, y2 = x1 + w, y1 + h
+                alpha_image = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
+                alpha_image = alpha_image.float().view(B, 1, H, W)
+                extra_features['template_alpha'] = self.template_preprocess(alpha_image).flatten(2).transpose(1, 2)
 
         if self.search_preprocess is not None:
             assert past_search_anno is not None, "need search annotations"
             if type(self.search_preprocess) is Draw:
                 search = self.search_preprocess(search, past_search_anno)
             elif type(self.search_preprocess) is Embedding:
-                if extra_tokens is None:
-                    extra_tokens = self.search_preprocess(past_search_anno)
-                else:
-                    extra_tokens = torch.concat((extra_tokens, self.search_preprocess(past_search_anno)), dim=1)
+                extra_features['search_token'] = self.search_preprocess(past_search_anno)
+
 
         x, aux_dict = self.backbone(z=template, x=search,
-                                    extra_tokens=extra_tokens,
+                                    extra_features=extra_features,
                                     ce_template_mask=ce_template_mask,
                                     ce_keep_rate=ce_keep_rate,
                                     return_last_attn=return_last_attn,
@@ -203,6 +215,10 @@ def build_ostrack(cfg, training=True):
     elif cfg.MODEL.PROCESS.TEMPLATE == "template_embedding":
         template_preprocess = Embedding(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR,
                                embed_dim=768)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "template_alpha":
+        template_preprocess = torch.nn.Conv2d(1, 768, kernel_size=(16, 16), stride=(16, 16))
+        for param in template_preprocess.parameters():
+            torch.nn.init.zeros_(param)
     else:
         template_preprocess = None
 
@@ -212,6 +228,10 @@ def build_ostrack(cfg, training=True):
         search_preprocess = Draw(image_size=cfg.DATA.SEARCH.SIZE, drawmode='mask', color=color)
     elif cfg.MODEL.PROCESS.TEMPLATE == "search_embedding":
         search_preprocess = SearchEmbedding(search_size=cfg.DATA.SEARCH.SIZE, embed_dim=768)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "search_alpha":
+        search_preprocess = torch.nn.Conv2d(1, 768, kernel_size=(16, 16), stride=(16, 16))
+        for param in search_preprocess.parameters():
+            torch.nn.init.zeros_(param)
     else:
         search_preprocess = None
 

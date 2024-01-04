@@ -107,7 +107,7 @@ class BaseBackbone(nn.Module):
                     layer_name = f'norm{i_layer}'
                     self.add_module(layer_name, layer)
 
-    def forward_features(self, z, x, extra_tokens):
+    def forward_features(self, z, x, extra_features):
         B, H, W = x.shape[0], x.shape[2], x.shape[3]
 
         x = self.patch_embed(x)
@@ -120,6 +120,10 @@ class BaseBackbone(nn.Module):
         z += self.pos_embed_z
         x += self.pos_embed_x
 
+        if 'template_alpha' in extra_features:
+            z += extra_features['template_alpha']
+        if 'search_alpha' in extra_features:
+            x += extra_features['search_alpha']
         if self.add_sep_seg:
             x += self.search_segment_pos_embed
             z += self.template_segment_pos_embed
@@ -127,8 +131,11 @@ class BaseBackbone(nn.Module):
         x = combine_tokens(z, x, mode=self.cat_mode)
         if self.add_cls_token:
             x = torch.cat([cls_tokens, x], dim=1)
-        if extra_tokens is not None:
-            x = torch.cat([extra_tokens, x], dim=1)
+        if 'search_embedding' in  extra_features:
+            x = torch.cat([extra_features['search_embedding'], x], dim=1)
+        if 'template_embedding' in  extra_features:
+            x = torch.cat([extra_features['template_embedding'], x], dim=1)
+
 
         x = self.pos_drop(x)
 
@@ -142,7 +149,7 @@ class BaseBackbone(nn.Module):
         aux_dict = {"attn": None}
         return self.norm(x), aux_dict
 
-    def forward(self, z, x, extra_tokens, **kwargs):
+    def forward(self, z, x, extra_features, **kwargs):
         """
         Joint feature extraction and relation modeling for the basic ViT backbone.
         Args:
@@ -153,6 +160,6 @@ class BaseBackbone(nn.Module):
             x (torch.Tensor): merged template and search region feature, [B, L_z+L_x, C]
             attn : None
         """
-        x, aux_dict = self.forward_features(z, x, extra_tokens,)
+        x, aux_dict = self.forward_features(z, x, extra_features,)
 
         return x, aux_dict
