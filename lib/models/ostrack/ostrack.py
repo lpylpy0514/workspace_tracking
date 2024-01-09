@@ -72,6 +72,12 @@ class OSTrack(nn.Module):
                 x2, y2 = x1 + w, y1 + h
                 alpha_image = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
                 alpha_image = alpha_image.float().view(B, 1, H, W)
+                # from lib.models.ostrack.draw import depreprocess
+                # import cv2
+                # image = depreprocess((template + alpha_image)[0:1])
+                # cv2.imshow('image', image)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()
                 extra_features['template_alpha'] = self.template_preprocess(alpha_image).flatten(2).transpose(1, 2)
 
         if self.search_preprocess is not None:

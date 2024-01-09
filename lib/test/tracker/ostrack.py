@@ -83,13 +83,17 @@ class OSTrack(BaseTracker):
         past_search_anno[:, 2] = torch.tensor(np.sqrt(self.state[2] / self.state[3]) / self.params.search_factor)
         past_search_anno[:, 3] = torch.tensor(np.sqrt(self.state[3] / self.state[2]) / self.params.search_factor)
         past_search_anno[:, 0:2] = 0.5 - past_search_anno[:, 2:4] / 2
+        template_anno = torch.zeros((1, 4))
+        template_anno[:, 2] = torch.tensor(np.sqrt(self.init_bbox[2] / self.init_bbox[3]) / self.params.template_factor)
+        template_anno[:, 3] = torch.tensor(np.sqrt(self.init_bbox[3] / self.init_bbox[2]) / self.params.template_factor)
+        template_anno[:, 0:2] = 0.5 - template_anno[:, 2:4] / 2
         with torch.no_grad():
             x_dict = search
             # merge the template and the search
             # run the transformer
             out_dict = self.network.forward(
                 template=self.z_dict1.tensors, search=x_dict.tensors, ce_template_mask=self.box_mask_z,
-                template_anno=torch.tensor(self.init_bbox).view(-1, 4).cuda(),
+                template_anno=template_anno.view(-1, 4).cuda(),
                 past_search_anno=past_search_anno.cuda()
             )
 

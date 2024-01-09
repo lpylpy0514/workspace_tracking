@@ -352,6 +352,8 @@ freeze backbone的实验对比？
 | search & template draw |          |              |              |             | 62.8(-11)  |
 | jittered draw          |          |              | 60.31(-8.22) | 80.70(-2.9) | 71.9(-1.4) |
 | jittered embedding     |          |              |              |             |            |
+| td_osckpt              |          | 75.50(+0.36) | 68.99        | 83.62       | 73.9       |
+| talpha_osckpt          |          |              | 67.51        | 83.32       | 73.2       |
 | 冻结ostrack主体        |          |              |              |             |            |
 | ViPT draw              |          |              |              |             |            |
 
@@ -379,7 +381,7 @@ alpha通道box，采用01代表内部外部/采用可学习的两个数据表示
 
 alpha通道采用SAM生成mask
 
-
+mask输入SAM生成
 
 
 

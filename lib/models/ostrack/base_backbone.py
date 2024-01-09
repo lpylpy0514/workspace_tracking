@@ -131,9 +131,9 @@ class BaseBackbone(nn.Module):
         x = combine_tokens(z, x, mode=self.cat_mode)
         if self.add_cls_token:
             x = torch.cat([cls_tokens, x], dim=1)
-        if 'search_embedding' in  extra_features:
+        if 'search_embedding' in extra_features:
             x = torch.cat([extra_features['search_embedding'], x], dim=1)
-        if 'template_embedding' in  extra_features:
+        if 'template_embedding' in extra_features:
             x = torch.cat([extra_features['template_embedding'], x], dim=1)
 
 
