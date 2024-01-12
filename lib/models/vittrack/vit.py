@@ -111,14 +111,14 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cpu', help='Device of speed test.')
     args = parser.parse_args()
 
-    embed_dim = 256
+    embed_dim = 768
     pemode = "standard"
     device = args.device
     patch_embed = PatchEmbedding(embed_dim=embed_dim, activation=nn.Hardswish(), img_size=256, patch_size=16, mode=pemode)
     model = VisionTransformer(template_size=128, search_size=256, patch_embedding=patch_embed, patch_size=16,
                               depth=12, embed_dim=embed_dim, num_heads=embed_dim // 64, mlp_ratio=4)
 
-    bss = [1, 2, 4, 8, 16]
+    bss = [1]
     for bs in bss:
         print("batch size is" + str(bs))
         template = torch.randn((bs, 3, 128, 128))
@@ -128,12 +128,12 @@ if __name__ == '__main__':
         search = search.to(device)
         # speed test
         import time
-        for _ in range(50):
-            __ = model(template, search)
+        # for _ in range(50):
+        #     __ = model(template, search)
         tic = time.time()
-        for _ in range(100):
+        for _ in range(1):
             __ = model(template, search)
-        print(bs * 100/(time.time() - tic))
+        print(bs * 1/(time.time() - tic))
     # param & macs test
     from thop import profile
     from thop.utils import clever_format

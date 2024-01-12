@@ -142,6 +142,8 @@ trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt', dat
                             run_ids=None, display_name='vitb_td_osckpt'))
 trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_talpha_osckpt', dataset_name=dataset_name,
                             run_ids=None, display_name='vitb_talpha_osckpt'))
+trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_osckpt', dataset_name=dataset_name,
+                            run_ids=None, display_name='vitb_osckpt'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_384_mae_ce_32x4_ep300', dataset_name=dataset_name,
 #                             run_ids=None, display_name='OSTrack384'))
 

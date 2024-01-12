@@ -149,6 +149,11 @@ class Lasot(BaseVideoDataset):
 
     def get_frames(self, seq_id, frame_ids, anno=None):
         seq_path = self._get_sequence_path(seq_id)
+        # replace the lasot in path to sam_lasot
+        # lpy 2024.1.10
+        idx = seq_path.rfind("lasot")
+        mask_seq_path = seq_path[:idx] + str.replace(seq_path[idx:], "lasot", "sam_lasot")
+        mask = [self._get_mask(mask_seq_path, f_id) for f_id in frame_ids]
 
         obj_class = self._get_class(seq_path)
         frame_list = [self._get_frame(seq_path, f_id) for f_id in frame_ids]
@@ -157,6 +162,7 @@ class Lasot(BaseVideoDataset):
             anno = self.get_sequence_info(seq_id)
 
         anno_frames = {}
+        anno_frames['mask'] = mask
         for key, value in anno.items():
             anno_frames[key] = [value[f_id, ...].clone() for f_id in frame_ids]
 
@@ -167,3 +173,20 @@ class Lasot(BaseVideoDataset):
                                    'motion_adverb': None})
 
         return frame_list, anno_frames, object_meta
+
+
+    def _get_mask(self, seq_path, frame_id):
+        import cv2
+        if frame_id % 3 == 0:
+            mask_id = frame_id + 1
+        elif frame_id % 3 == 2:
+            mask_id = frame_id - 1
+        else:
+            mask_id = frame_id
+        mask_folder_path = seq_path + "/masks/"
+        mask_path = mask_folder_path + f'{mask_id:08d}.jpg'
+        # 排除最后一帧的情况
+        if not os.path.isfile(mask_path):
+            mask_id = mask_id - 3
+            mask_path = mask_folder_path + f'{mask_id:08d}.jpg'
+        return (cv2.imread(mask_path, 0) > 127).astype(np.float32)

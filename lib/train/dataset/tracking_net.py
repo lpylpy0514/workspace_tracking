@@ -133,10 +133,22 @@ class TrackingNet(BaseVideoDataset):
     def get_frames(self, seq_id, frame_ids, anno=None):
         frame_list = [self._get_frame(seq_id, f) for f in frame_ids]
 
+        set_id = self.sequence_list[seq_id][0]
+        vid_name = self.sequence_list[seq_id][1]
+        seq_path = os.path.join(self.root, "TRAIN_" + str(set_id), "frames", vid_name)
+        # replace the trackingnet in path to sam_trackingnet
+        # lpy 2024.1.10
+        idx = seq_path.rfind("trackingnet")
+        mask_seq_path = seq_path[:idx] + str.replace(seq_path[idx:], "trackingnet", "sam_trackingnet")
+        idx = mask_seq_path.rfind("frames/")
+        mask_seq_path = mask_seq_path[:idx] + str.replace(mask_seq_path[idx:], "frames/", "")
+        mask = [self._get_mask(mask_seq_path, f_id) for f_id in frame_ids]
+
         if anno is None:
             anno = self.get_sequence_info(seq_id)
 
         anno_frames = {}
+        anno_frames['mask'] = mask
         for key, value in anno.items():
             anno_frames[key] = [value[f_id, ...].clone() for f_id in frame_ids]
 
@@ -149,3 +161,20 @@ class TrackingNet(BaseVideoDataset):
                                    'motion_adverb': None})
 
         return frame_list, anno_frames, object_meta
+
+
+    def _get_mask(self, seq_path, frame_id):
+        import cv2
+        if frame_id % 3 == 2:
+            mask_id = frame_id + 1
+        elif frame_id % 3 == 1:
+            mask_id = frame_id - 1
+        else:
+            mask_id = frame_id
+        mask_folder_path = seq_path + "/mask/"
+        mask_path = mask_folder_path + f'{mask_id}.jpg'
+        # 排除最后一帧的情况
+        if not os.path.isfile(mask_path):
+            mask_id = mask_id - 3
+            mask_path = mask_folder_path + f'{mask_id}.jpg'
+        return (cv2.imread(mask_path, 0) > 127).astype(np.float32)

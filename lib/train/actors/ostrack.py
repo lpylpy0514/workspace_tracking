@@ -72,7 +72,8 @@ class OSTrackActor(BaseActor):
                             ce_keep_rate=ce_keep_rate,
                             return_last_attn=False,
                             template_anno=data['template_anno'][0],
-                            past_search_anno=data['past_search_anno'][0])
+                            past_search_anno=data['past_search_anno'][0],
+                            template_mask=data['template_masks'][0])
 
         return out_dict
 

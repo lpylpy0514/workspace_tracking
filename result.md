@@ -353,7 +353,8 @@ freeze backbone的实验对比？
 | jittered draw          |          |              | 60.31(-8.22) | 80.70(-2.9) | 71.9(-1.4) |
 | jittered embedding     |          |              |              |             |            |
 | td_osckpt              |          | 75.50(+0.36) | 68.99        | 83.62       | 73.9       |
-| talpha_osckpt          |          |              | 67.51        | 83.32       | 73.2       |
+| talpha_osckpt          |          | 74.68(-0.46) | 67.51        | 83.32       | 73.2       |
+| osckpt对照组           |          | 75.03        | 68.55        | 83.33       | 73.2       |
 | 冻结ostrack主体        |          |              |              |             |            |
 | ViPT draw              |          |              |              |             |            |
 
@@ -383,9 +384,9 @@ alpha通道采用SAM生成mask
 
 mask输入SAM生成
 
+mask在每个数据集中的get_sequence_info方法中进行读取，数据形状为(1, W, H)在模型中进行使用，内部数据类型为float32类型，前景部分为1.，背景部分为0.。
 
-
-
+20240110完成lasot的mask输入的dataset部分
 
 
 

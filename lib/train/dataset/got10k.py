@@ -174,13 +174,36 @@ class Got10k(BaseVideoDataset):
         seq_path = self._get_sequence_path(seq_id)
         obj_meta = self.sequence_meta_info[self.sequence_list[seq_id]]
 
+        # replace the got10k in path to sam_got10k
+        # lpy 2024.1.11
+        idx = seq_path.rfind("got10k")
+        mask_seq_path = seq_path[:idx] + str.replace(seq_path[idx:], "got10k", "sam_got10k")
+        mask = [self._get_mask(mask_seq_path, f_id) for f_id in frame_ids]
+
         frame_list = [self._get_frame(seq_path, f_id) for f_id in frame_ids]
 
         if anno is None:
             anno = self.get_sequence_info(seq_id)
 
         anno_frames = {}
+        anno_frames['mask'] = mask
         for key, value in anno.items():
             anno_frames[key] = [value[f_id, ...].clone() for f_id in frame_ids]
 
         return frame_list, anno_frames, obj_meta
+
+    def _get_mask(self, seq_path, frame_id):
+        import cv2
+        if frame_id % 3 == 0:
+            mask_id = frame_id + 1
+        elif frame_id % 3 == 2:
+            mask_id = frame_id - 1
+        else:
+            mask_id = frame_id
+        mask_folder_path = seq_path + "/masks/"
+        mask_path = mask_folder_path + f'{mask_id:08d}.jpg'
+        # 排除最后一帧的情况
+        if not os.path.isfile(mask_path):
+            mask_id = mask_id - 3
+            mask_path = mask_folder_path + f'{mask_id:08d}.jpg'
+        return (cv2.imread(mask_path, 0) > 127).astype(np.float32)

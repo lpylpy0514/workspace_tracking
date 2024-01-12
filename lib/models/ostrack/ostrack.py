@@ -51,6 +51,7 @@ class OSTrack(nn.Module):
                 return_last_attn=False,
                 template_anno=None,
                 past_search_anno=None,
+                template_mask=None,
                 ):
         # extra_tokens = None
         B, C, W, H = template.shape
@@ -62,16 +63,19 @@ class OSTrack(nn.Module):
             elif type(self.template_preprocess) is Embedding:
                 extra_features['template_token'] = self.template_preprocess(template_anno)
             elif type(self.template_preprocess) is torch.nn.Conv2d:
-                # generate mesh-grid
-                assert H == W
-                image_size = H
-                indice = torch.arange(0, W).view(-1, 1)
-                coord_x = indice.repeat((image_size, 1)).view(image_size, image_size).float().to(template.device)
-                coord_y = indice.repeat((1, image_size)).view(image_size, image_size).float().to(template.device)
-                x1, y1, w, h = (template_anno.view(B, 4, 1, 1) * image_size).unbind(1)
-                x2, y2 = x1 + w, y1 + h
-                alpha_image = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
-                alpha_image = alpha_image.float().view(B, 1, H, W)
+                if template_mask is None:
+                    # generate mesh-grid
+                    assert H == W
+                    image_size = H
+                    indice = torch.arange(0, W).view(-1, 1)
+                    coord_x = indice.repeat((image_size, 1)).view(image_size, image_size).float().to(template.device)
+                    coord_y = indice.repeat((1, image_size)).view(image_size, image_size).float().to(template.device)
+                    x1, y1, w, h = (template_anno.view(B, 4, 1, 1) * image_size).unbind(1)
+                    x2, y2 = x1 + w, y1 + h
+                    alpha_image = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
+                    alpha_image = alpha_image.float().view(B, 1, H, W)
+                else:
+                    alpha_image = template_mask.view(B, 1, H, W)
                 # from lib.models.ostrack.draw import depreprocess
                 # import cv2
                 # image = depreprocess((template + alpha_image)[0:1])
