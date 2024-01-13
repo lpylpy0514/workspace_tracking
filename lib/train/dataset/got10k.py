@@ -194,6 +194,7 @@ class Got10k(BaseVideoDataset):
 
     def _get_mask(self, seq_path, frame_id):
         import cv2
+        import jpeg4py
         if frame_id % 3 == 0:
             mask_id = frame_id + 1
         elif frame_id % 3 == 2:
@@ -206,4 +207,4 @@ class Got10k(BaseVideoDataset):
         if not os.path.isfile(mask_path):
             mask_id = mask_id - 3
             mask_path = mask_folder_path + f'{mask_id:08d}.jpg'
-        return (cv2.imread(mask_path, 0) > 127).astype(np.float32)
+        return (jpeg4py.JPEG(mask_path).decode(grayscale=True) > 127).astype(np.float32)
