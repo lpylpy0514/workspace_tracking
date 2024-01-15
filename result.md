@@ -388,15 +388,21 @@ mask在每个数据集中的get_sequence_info方法中进行读取，数据形�
 
 20240110完成lasot的mask输入的dataset部分
 
+20240112完成数据集传输
+
+20240113完成alpha训练
 
 
 
+jpeg4py.JPEG(path).decode()打开jpeg图像比cv快
 
+0、mask初始化训练测试
 
+1、更多tracker，包括轻量化tracker、ViPT
 
+2、点初始化测试性能，sam生成前景，随机采样点初始化测试
 
-
-
+3、模板抖动、模板更新
 
 
 

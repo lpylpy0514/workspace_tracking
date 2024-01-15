@@ -207,4 +207,6 @@ class Got10k(BaseVideoDataset):
         if not os.path.isfile(mask_path):
             mask_id = mask_id - 3
             mask_path = mask_folder_path + f'{mask_id:08d}.jpg'
-        return (jpeg4py.JPEG(mask_path).decode(grayscale=True) > 127).astype(np.float32)
+        img = jpeg4py.JPEG(mask_path).decode()
+        gray_img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        return torch.tensor((gray_img > 127).astype(np.float32))
