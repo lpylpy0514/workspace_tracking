@@ -52,7 +52,7 @@ def sample_target(im, target_bb, search_area_factor, output_sz=None, mask=None):
     # Pad
     im_crop_padded = cv.copyMakeBorder(im_crop, y1_pad, y2_pad, x1_pad, x2_pad, cv.BORDER_CONSTANT)
     # deal with attention mask
-    H, W, _ = im_crop_padded.shape
+    H, W = im_crop_padded.shape[0], im_crop_padded.shape[1]
     att_mask = np.ones((H,W))
     end_x, end_y = -x2_pad, -y2_pad
     if y2_pad == 0:

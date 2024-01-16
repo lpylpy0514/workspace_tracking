@@ -13,7 +13,7 @@ from lib.models.layers.head import build_box_head
 from lib.models.ostrack.vit import vit_base_patch16_224, vit_large_patch16_224
 from lib.models.ostrack.vit_ce import vit_large_patch16_224_ce, vit_base_patch16_224_ce
 from lib.utils.box_ops import box_xyxy_to_cxcywh
-from lib.models.ostrack.draw import Draw, Color
+from lib.models.ostrack.draw import Draw, Color, DrawMask
 from lib.models.ostrack.embedding import Embedding, SearchEmbedding
 from lib.models.ostrack.preprocess import build_preprocess
 from lib.models.ostrack.clipvit import clipvittracking_base_patch16
@@ -83,7 +83,8 @@ class OSTrack(nn.Module):
                 # cv2.waitKey(0)
                 # cv2.destroyAllWindows()
                 extra_features['template_alpha'] = self.template_preprocess(alpha_image).flatten(2).transpose(1, 2)
-
+            elif type(self.template_preprocess) is DrawMask:
+                template = self.template_preprocess(template, template_mask)
         if self.search_preprocess is not None:
             assert past_search_anno is not None, "need search annotations"
             if type(self.search_preprocess) is Draw:
@@ -229,6 +230,10 @@ def build_ostrack(cfg, training=True):
         template_preprocess = torch.nn.Conv2d(1, 768, kernel_size=(16, 16), stride=(16, 16))
         for param in template_preprocess.parameters():
             torch.nn.init.zeros_(param)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "template_draw_mask":
+        net = build_preprocess(image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
+        color = Color(colormode="generate_color", net=net)
+        template_preprocess = DrawMask(image_size=cfg.DATA.TEMPLATE.SIZE, color=color)
     else:
         template_preprocess = None
 

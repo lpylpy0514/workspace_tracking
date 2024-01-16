@@ -32,7 +32,7 @@ def draw(img, mode, transparency, pt1, pt2, color, thickness):
 if __name__ == '__main__':
 
     for i in range(1, 180):
-        data_dir = f"/home/ymz/newdisk1/GOT10k/test/GOT-10k_Test_{i:06}"
+        data_dir = f"/home/ymz/newdisk1/GOT10k/train/GOT-10k_Train_{i:06}"
         gt_dir = data_dir + "/groundtruth.txt"
         gt = pandas.read_csv(gt_dir, delimiter=',', header=None, dtype=np.float32, na_filter=False, low_memory=False).values
 

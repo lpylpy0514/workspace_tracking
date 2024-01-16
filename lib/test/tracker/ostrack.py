@@ -16,6 +16,8 @@ from lib.test.tracker.data_utils import Preprocessor
 from lib.utils.box_ops import clip_box
 from lib.utils.ce_utils import generate_mask_cond
 
+from segment_anything import SamPredictor, sam_model_registry
+
 
 class OSTrack(BaseTracker):
     def __init__(self, params, dataset_name):
@@ -27,6 +29,14 @@ class OSTrack(BaseTracker):
         self.network.eval()
         self.preprocessor = Preprocessor()
         self.state = None
+        if self.cfg.MODEL.PROCESS.TEMPLATE is not None:
+            sam_checkpoint = "sam_ckpt/sam_vit_h_4b8939.pth"
+            model_type = "vit_h"
+            device = "cuda"
+            sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+            sam.to(device=device)
+            self.predictor = SamPredictor(sam)
+
 
         self.feat_sz = self.cfg.TEST.SEARCH_SIZE // self.cfg.MODEL.BACKBONE.STRIDE
         # motion constrain
@@ -71,6 +81,20 @@ class OSTrack(BaseTracker):
             '''save all predicted boxes'''
             all_boxes_save = info['init_bbox'] * self.cfg.MODEL.NUM_OBJECT_QUERIES
             return {"all_boxes": all_boxes_save}
+        # xyxy
+        if self.cfg.MODEL.PROCESS.TEMPLATE is not None:
+            import numpy as np
+            x1, y1, w, h = self.init_bbox
+            x2, y2 = x1 + w, y1 + h
+            input_box = np.array([x1, y1, x2, y2])
+            self.predictor.set_image(image)
+
+            self.masks, _, _ = self.predictor.predict(
+                point_coords=None,
+                point_labels=None,
+                box=input_box[None, :],
+                multimask_output=False,
+            )
 
     def track(self, image, info: dict = None):
         H, W, _ = image.shape
@@ -87,6 +111,12 @@ class OSTrack(BaseTracker):
         template_anno[:, 2] = torch.tensor(np.sqrt(self.init_bbox[2] / self.init_bbox[3]) / self.params.template_factor)
         template_anno[:, 3] = torch.tensor(np.sqrt(self.init_bbox[3] / self.init_bbox[2]) / self.params.template_factor)
         template_anno[:, 0:2] = 0.5 - template_anno[:, 2:4] / 2
+        template_mask = None
+        if self.cfg.MODEL.PROCESS.TEMPLATE is not None:
+            # template_mask = torch.tensor(self.masks[0][None]).cuda()
+            template_mask, _, _ = sample_target(np.expand_dims(self.masks[0], axis=-1).astype(np.uint8), self.state, self.params.template_factor,
+                                                                    output_sz=self.params.template_size)  # (x1, y1, w, h)
+            template_mask = torch.tensor(template_mask).float().cuda()
         with torch.no_grad():
             x_dict = search
             # merge the template and the search
@@ -94,7 +124,8 @@ class OSTrack(BaseTracker):
             out_dict = self.network.forward(
                 template=self.z_dict1.tensors, search=x_dict.tensors, ce_template_mask=self.box_mask_z,
                 template_anno=template_anno.view(-1, 4).cuda(),
-                past_search_anno=past_search_anno.cuda()
+                past_search_anno=past_search_anno.cuda(),
+                template_mask=template_mask
             )
 
         # add hann windows

@@ -2,9 +2,9 @@
 
 # about your tracker
 script="ostrack"
-config="vitb_osckpt"
+config="vitb_talphamask_osckpt"
 num_gpus=2
-num_thread=8
+num_thread=4
 
 # evaluation for got10k
 python tracking/test.py $script $config --dataset got10k_test --threads $num_thread --num_gpus $num_gpus

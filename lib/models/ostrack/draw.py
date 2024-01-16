@@ -257,6 +257,30 @@ class Draw(nn.Module):
         return output
 
 
+
+class DrawMask(nn.Module):
+    def __init__(self, image_size, color):
+        super().__init__()
+        self.image_size = image_size
+        self.color = color
+
+    def forward(self, image, mask):
+        # image: [B, 3, image_size, image_size]
+        # mask: [B, image_size, image_size], normalized x1, y1, w, h
+        mask = mask.bool()
+        color, transparency = self.color(image)
+        # draw color on image
+        image_draw = copy.deepcopy(image)
+        image_draw = image_draw.permute(0, 2, 3, 1)
+        B = image.shape[0]
+        color = color.view(B, 1, 1, 3).repeat(1, self.image_size, self.image_size, 1)
+        image_draw[mask] = color[mask]
+        image_draw = image_draw.permute(0, 3, 1, 2)
+        transparency = transparency.view((B, 1, 1, 1))
+        output = image_draw * (1 - transparency) + image * transparency
+        return output
+
+
 def depreprocess(feature):
     mean = torch.tensor([0.485, 0.456, 0.406]).view((1, 3, 1, 1))
     std = torch.tensor([0.229, 0.224, 0.225]).view((1, 3, 1, 1))
