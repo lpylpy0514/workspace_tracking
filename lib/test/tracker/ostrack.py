@@ -116,7 +116,7 @@ class OSTrack(BaseTracker):
             # template_mask = torch.tensor(self.masks[0][None]).cuda()
             template_mask, _, _ = sample_target(np.expand_dims(self.masks[0], axis=-1).astype(np.uint8), self.state, self.params.template_factor,
                                                                     output_sz=self.params.template_size)  # (x1, y1, w, h)
-            template_mask = torch.tensor(template_mask).float().cuda()
+            template_mask = torch.tensor(template_mask)[None].float().cuda()
         with torch.no_grad():
             x_dict = search
             # merge the template and the search

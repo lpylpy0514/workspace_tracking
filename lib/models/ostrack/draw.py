@@ -232,6 +232,7 @@ class Draw(nn.Module):
         # image: [B, 3, image_size, image_size]
         # annotations: [B, 4], normalized x1, y1, w, h
         color, transparency = self.color(image)
+        # print(transparency)
         annotations = torch.clamp(annotations, 0, 1)
         B = annotations.shape[0]
         x1, y1, w, h = (annotations.view(B, 4, 1, 1) * self.image_size).unbind(1)
@@ -269,6 +270,10 @@ class DrawMask(nn.Module):
         # mask: [B, image_size, image_size], normalized x1, y1, w, h
         mask = mask.bool()
         color, transparency = self.color(image)
+        # B = image.shape[0]
+        # color = torch.tensor((2, -2, -2)).view((1, 3)).repeat((B, 1)).float().cuda()
+        # transparency = torch.tensor((0)).view((1, 1)).repeat((B, 1)).float().cuda()
+        # print(transparency)
         # draw color on image
         image_draw = copy.deepcopy(image)
         image_draw = image_draw.permute(0, 2, 3, 1)
@@ -279,6 +284,20 @@ class DrawMask(nn.Module):
         transparency = transparency.view((B, 1, 1, 1))
         output = image_draw * (1 - transparency) + image * transparency
         return output
+
+
+class ExtraTemplateMask(nn.Module):
+    def __init__(self, patch_embedding, image_size=128, patch_size=16, embed_dim=768):
+        super().__init__()
+        self.patch_embedding = patch_embedding
+        self.pos_embed = torch.nn.Parameter(torch.zeros((1, (image_size // patch_size) ** 2, embed_dim)))
+
+    def forward(self, image, mask):
+        # image: [B, 3, image_size, image_size]
+        # mask: [B, image_size, image_size], normalized x1, y1, w, h
+        B, image_size = mask.shape[0], mask.shape[1]
+        mask = mask.view(B, 1, image_size, image_size)
+        return self.patch_embedding(image * mask).flatten(2).transpose(1, 2) + self.pos_embed
 
 
 def depreprocess(feature):

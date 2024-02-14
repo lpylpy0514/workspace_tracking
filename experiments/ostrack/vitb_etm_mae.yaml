@@ -37,7 +37,7 @@ DATA:
     - 1
     - 1
     - 1
-    SAMPLE_PER_EPOCH: 600
+    SAMPLE_PER_EPOCH: 60000
   VAL:
     DATASETS_NAME:
     - GOT10K_votval
@@ -45,10 +45,9 @@ DATA:
     - 1
     SAMPLE_PER_EPOCH: 10000
 MODEL:
-  PRETRAIN_FILE: "output/checkpoints/train/ostrack/vitb_256_mae_32x4_ep300/OSTrack_ep0300.pth.tar"
+  PRETRAIN_FILE: "mae_pretrain_vit_base.pth"
   PROCESS:
-    TEMPLATE: "template_draw_mask"
-#    TEMPLATE: "draw_based_on_template"
+    TEMPLATE: "extra_template_mask"
     SEARCH: "None"
   EXTRA_MERGER: False
   RETURN_INTER: False
@@ -61,7 +60,7 @@ MODEL:
 TRAIN:
   BACKBONE_MULTIPLIER: 0.1
   DROP_PATH_RATE: 0.1
-  BATCH_SIZE: 2
+  BATCH_SIZE: 64
   EPOCH: 300
   GIOU_WEIGHT: 2.0
   L1_WEIGHT: 5.0
@@ -74,7 +73,7 @@ TRAIN:
   SCHEDULER:
     TYPE: step
     DECAY_RATE: 0.1
-  VAL_EPOCH_INTERVAL: 1
+  VAL_EPOCH_INTERVAL: 20
   WEIGHT_DECAY: 0.0001
   AMP: False
 TEST:

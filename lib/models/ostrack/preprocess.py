@@ -18,7 +18,7 @@ class PatchEmbedding(nn.Module):
 
 class Preprocess(nn.Module):
     def __init__(self, template_size, patch_embedding, patch_size, num_heads=12,
-                 mlp_ratio=4, depth=12, embed_dim=768, output_dim=4):
+                 mlp_ratio=4, depth=12, embed_dim=768, output_dim=4, sigmoid=True):
         super().__init__()
         self.patch_embed = patch_embedding
         num_patches = (template_size // patch_size) ** 2
@@ -28,7 +28,10 @@ class Preprocess(nn.Module):
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.norm = nn.LayerNorm(embed_dim)
         self.ln = nn.Linear(embed_dim, output_dim)
-        self.sig = nn.Sigmoid()
+        if sigmoid is True:
+            self.sig = nn.Sigmoid()
+        else:
+            self.sig = nn.Identity()
         self.output_dim = output_dim
 
         trunc_normal_(self.cls_token, std=.02)
@@ -61,10 +64,10 @@ class Preprocess(nn.Module):
         return color, transparency
 
 
-def build_preprocess(image_size, patch_size, embed_dim, depth, output_dim):
+def build_preprocess(image_size, patch_size, embed_dim, depth, output_dim, sigmoid=True):
     patch_embedding = PatchEmbedding(embed_dim, image_size, patch_size)
     preprocess = Preprocess(image_size, patch_embedding, patch_size, embed_dim=embed_dim,
-                            depth=depth, output_dim=output_dim)
+                            depth=depth, output_dim=output_dim, sigmoid=sigmoid)
     return preprocess
 
 

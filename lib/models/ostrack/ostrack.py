@@ -13,7 +13,7 @@ from lib.models.layers.head import build_box_head
 from lib.models.ostrack.vit import vit_base_patch16_224, vit_large_patch16_224
 from lib.models.ostrack.vit_ce import vit_large_patch16_224_ce, vit_base_patch16_224_ce
 from lib.utils.box_ops import box_xyxy_to_cxcywh
-from lib.models.ostrack.draw import Draw, Color, DrawMask
+from lib.models.ostrack.draw import Draw, Color, DrawMask, ExtraTemplateMask
 from lib.models.ostrack.embedding import Embedding, SearchEmbedding
 from lib.models.ostrack.preprocess import build_preprocess
 from lib.models.ostrack.clipvit import clipvittracking_base_patch16
@@ -76,23 +76,31 @@ class OSTrack(nn.Module):
                     alpha_image = alpha_image.float().view(B, 1, H, W)
                 else:
                     alpha_image = template_mask.view(B, 1, H, W)
-                # from lib.models.ostrack.draw import depreprocess
-                # import cv2
-                # image = depreprocess((template + alpha_image)[0:1])
-                # cv2.imshow('image', image)
-                # cv2.waitKey(0)
-                # cv2.destroyAllWindows()
+
                 extra_features['template_alpha'] = self.template_preprocess(alpha_image).flatten(2).transpose(1, 2)
             elif type(self.template_preprocess) is DrawMask:
                 template = self.template_preprocess(template, template_mask)
+                # from lib.models.ostrack.draw import depreprocess
+                # import cv2
+                # image = depreprocess(template[0:1])
+                # cv2.imshow('image', image)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()
+            elif type(self.template_preprocess) is ExtraTemplateMask:
+                extra_features['template_embedding'] = self.template_preprocess(template, template_mask)
         if self.search_preprocess is not None:
             assert past_search_anno is not None, "need search annotations"
             if type(self.search_preprocess) is Draw:
                 search = self.search_preprocess(search, past_search_anno)
             elif type(self.search_preprocess) is Embedding:
-                extra_features['search_token'] = self.search_preprocess(past_search_anno)
+                extra_features['template_embedding'] = self.search_preprocess(past_search_anno)
 
-
+        # from lib.models.ostrack.draw import depreprocess
+        # import cv2
+        # image = depreprocess(template[0:1])
+        # cv2.imshow('image', image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
         x, aux_dict = self.backbone(z=template, x=search,
                                     extra_features=extra_features,
                                     ce_template_mask=ce_template_mask,
@@ -223,6 +231,10 @@ def build_ostrack(cfg, training=True):
         net = build_preprocess(image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
         color = Color(colormode="generate_color", net=net)
         template_preprocess = Draw(image_size=cfg.DATA.TEMPLATE.SIZE, drawmode='mask', color=color)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "draw_based_on_template_nosig":
+        net = build_preprocess(image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4, sigmoid=False)
+        color = Color(colormode="generate_color", net=net)
+        template_preprocess = Draw(image_size=cfg.DATA.TEMPLATE.SIZE, drawmode='mask', color=color)
     elif cfg.MODEL.PROCESS.TEMPLATE == "template_embedding":
         template_preprocess = Embedding(template_size=cfg.DATA.TEMPLATE.SIZE, template_factor=cfg.DATA.TEMPLATE.FACTOR,
                                embed_dim=768)
@@ -234,6 +246,13 @@ def build_ostrack(cfg, training=True):
         net = build_preprocess(image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4)
         color = Color(colormode="generate_color", net=net)
         template_preprocess = DrawMask(image_size=cfg.DATA.TEMPLATE.SIZE, color=color)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "template_draw_mask_nosig":
+        net = build_preprocess(image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768, depth=1, output_dim=4, sigmoid=False)
+        color = Color(colormode="generate_color", net=net)
+        template_preprocess = DrawMask(image_size=cfg.DATA.TEMPLATE.SIZE, color=color)
+    elif cfg.MODEL.PROCESS.TEMPLATE == "extra_template_mask":
+        patch_embedding = torch.nn.Conv2d(in_channels=3, out_channels=768, kernel_size=(16, 16), stride=(16, 16))
+        template_preprocess = ExtraTemplateMask(patch_embedding, image_size=cfg.DATA.TEMPLATE.SIZE, patch_size=16, embed_dim=768)
     else:
         template_preprocess = None
 
