@@ -101,7 +101,7 @@ class VisionTransformerCE(VisionTransformer):
 
     def forward_features(self, z, x, mask_z=None, mask_x=None,
                          ce_template_mask=None, ce_keep_rate=None,
-                         return_last_attn=False
+                         return_last_attn=False, extra_features=None,
                          ):
         B, H, W = x.shape[0], x.shape[2], x.shape[3]
 
@@ -195,10 +195,10 @@ class VisionTransformerCE(VisionTransformer):
         return x, aux_dict
 
     def forward(self, z, x, ce_template_mask=None, ce_keep_rate=None,
-                tnc_keep_rate=None,
+                tnc_keep_rate=None, extra_features=None,
                 return_last_attn=False):
 
-        x, aux_dict = self.forward_features(z, x, ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate,)
+        x, aux_dict = self.forward_features(z, x, ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate, extra_features=extra_features)
 
         return x, aux_dict
 
