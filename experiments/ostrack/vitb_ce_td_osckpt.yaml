@@ -45,8 +45,8 @@ DATA:
     - 1
     SAMPLE_PER_EPOCH: 10000
 MODEL:
-#  PRETRAIN_FILE: "output/checkpoints/train/ostrack/vitb_256_mae_ce_32x4_ep300/OSTrack_ep0300.pth.tar"
-  PRETRAIN_FILE: "/home/ymz/newdisk2/workspace_tracking/output/checkpoints/train/ostrack/vitb_256_mae_ce_32x4_ep300/OSTrack_ep0300.pth.tar"
+  PRETRAIN_FILE: "output/checkpoints/train/ostrack/vitb_256_mae_ce_32x4_ep300/OSTrack_ep0300.pth.tar"
+#  PRETRAIN_FILE: "/home/ymz/newdisk2/workspace_tracking/output/checkpoints/train/ostrack/vitb_256_mae_ce_32x4_ep300/OSTrack_ep0300.pth.tar"
   PROCESS:
     TEMPLATE: "draw_based_on_template"
     SEARCH: "None"
@@ -66,7 +66,7 @@ TRAIN:
   DROP_PATH_RATE: 0.1
   CE_START_EPOCH: 0  # candidate elimination start epoch
   CE_WARM_EPOCH: 0  # candidate elimination warm up epoch
-  BATCH_SIZE: 3
+  BATCH_SIZE: 64
   EPOCH: 300
   GIOU_WEIGHT: 2.0
   L1_WEIGHT: 5.0

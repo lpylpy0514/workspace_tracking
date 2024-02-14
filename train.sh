@@ -7,7 +7,7 @@
 #cd /18353470163/lpy/workspace_tracking
 # about your tracker
 script="ostrack"
-config="vitb_td_osckpt1"
+config="vitb_ce_td_osckpt"
 #config="spd_test"
 num_gpus=2
 num_thread=8
