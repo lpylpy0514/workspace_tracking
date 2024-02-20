@@ -19,32 +19,32 @@ from ..layers.attn_blocks import CEBlock, candidate_elimination_prompt
 _logger = logging.getLogger(__name__)
 
 
-class Fovea(nn.Module):
-
-    def __init__(self, smooth=False):
-        super().__init__()
-
-        self.softmax = nn.Softmax(dim=-1)
-
-        self.smooth = smooth
-        if smooth:
-            self.smooth = nn.Parameter(torch.zeros(1) + 10.0)
-
-    def forward(self, x):
-        '''
-            x: [batch_size, features, k]
-        '''
-        b, c, h, w = x.shape
-        x = x.contiguous().view(b, c, h*w)
-
-        if self.smooth:
-            mask = self.softmax(x * self.smooth)
-        else:
-            mask = self.softmax(x)
-        output = mask * x
-        output = output.contiguous().view(b, c, h, w)
-
-        return output
+# class Fovea(nn.Module):
+#
+#     def __init__(self, smooth=False):
+#         super().__init__()
+#
+#         self.softmax = nn.Softmax(dim=-1)
+#
+#         self.smooth = smooth
+#         if smooth:
+#             self.smooth = nn.Parameter(torch.zeros(1) + 10.0)
+#
+#     def forward(self, x):
+#         '''
+#             x: [batch_size, features, k]
+#         '''
+#         b, c, h, w = x.shape
+#         x = x.contiguous().view(b, c, h*w)
+#
+#         if self.smooth:
+#             mask = self.softmax(x * self.smooth)
+#         else:
+#             mask = self.softmax(x)
+#         output = mask * x
+#         output = output.contiguous().view(b, c, h, w)
+#
+#         return output
 
 
 class Prompt_block(nn.Module, ):
@@ -53,7 +53,7 @@ class Prompt_block(nn.Module, ):
         self.conv0_0 = nn.Conv2d(in_channels=inplanes, out_channels=hide_channel, kernel_size=1, stride=1, padding=0)
         self.conv0_1 = nn.Conv2d(in_channels=inplanes, out_channels=hide_channel, kernel_size=1, stride=1, padding=0)
         self.conv1x1 = nn.Conv2d(in_channels=hide_channel, out_channels=inplanes, kernel_size=1, stride=1, padding=0)
-        self.fovea = Fovea(smooth=smooth)
+        self.fovea = nn.Identity(smooth=smooth)
 
         for p in self.parameters():
             if p.dim() > 1:

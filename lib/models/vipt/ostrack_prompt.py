@@ -17,7 +17,7 @@ from lib.utils.box_ops import box_xyxy_to_cxcywh
 class ViPTrack(nn.Module):
     """ This is the base class for ViPTrack """
 
-    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER"):
+    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER", template_preprocess=None):
         """ Initializes the model.
         Parameters:
             transformer: torch module of the transformer architecture.
@@ -36,12 +36,31 @@ class ViPTrack(nn.Module):
         if self.aux_loss:
             self.box_head = _get_clones(self.box_head, 6)
 
+        self.template_preprocess = template_preprocess
+
     def forward(self, template: torch.Tensor,
                 search: torch.Tensor,
                 ce_template_mask=None,
                 ce_keep_rate=None,
                 return_last_attn=False,
+                template_anno=None,
+                past_search_anno=None,
+                template_mask=None,
                 ):
+        B, C, W, H = template.shape
+        if type(self.template_preprocess) is nn.Identity:
+            assert H == W
+            image_size = H
+            indice = torch.arange(0, W).view(-1, 1)
+            coord_x = indice.repeat((image_size, 1)).view(image_size, image_size).float().to(template.device)
+            coord_y = indice.repeat((1, image_size)).view(image_size, image_size).float().to(template.device)
+            x1, y1, w, h = (template_anno.view(B, 4, 1, 1) * image_size).unbind(1)
+            x2, y2 = x1 + w, y1 + h
+            template_alpha = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
+            template_alpha = template_alpha.float().view(B, 1, H, W).cuda()
+            search_alpha = torch.zeros((B, 1, H * 2, W * 2)).cuda()
+            template = torch.concat((template, template_alpha, template_alpha, template_alpha), dim=1)
+            search = torch.concat((search, search_alpha, search_alpha, search_alpha), dim=1)
         x, aux_dict = self.backbone(z=template, x=search,
                                     ce_template_mask=ce_template_mask,
                                     ce_keep_rate=ce_keep_rate,
@@ -128,11 +147,15 @@ def build_viptrack(cfg, training=True):
 
     box_head = build_box_head(cfg, hidden_dim)
 
+    if cfg.MODEL.PROCESS.TEMPLATE == "draw_vipt":
+        template_preprocess = nn.Identity()
+
     model = ViPTrack(
         backbone,
         box_head,
         aux_loss=False,
         head_type=cfg.MODEL.HEAD.TYPE,
+        template_preprocess=template_preprocess
     )
 
     if 'OSTrack' in cfg.MODEL.PRETRAIN_FILE and training:

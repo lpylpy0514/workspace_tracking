@@ -61,7 +61,11 @@ def run(settings):
     # cfg.depth = 3
     # Create network
     if settings.script_name == "ostrack":
-        net = build_ostrack(cfg)
+        if cfg.MODEL.PROCESS.TEMPLATE == "draw_vipt":
+            from lib.models.vipt.ostrack_prompt import build_viptrack
+            net = build_viptrack(cfg)
+        else:
+            net = build_ostrack(cfg)
     elif settings.script_name == 'vit_dist' and cfg.TRAIN.AUX_TYPE == "mean":
         net = build_ostrack_dist(cfg)
     elif settings.script_name == 'vit_dist' and cfg.TRAIN.AUX_TYPE == "Trblk":
@@ -75,7 +79,7 @@ def run(settings):
     elif settings.script_name == "efficienttrack":
         net = build_efficienttrack(cfg, mode="train")
     elif settings.script_name == "vittrack":
-        net = build_vittrack(cfg)
+        pass
     else:
         raise ValueError("illegal script name")
 
