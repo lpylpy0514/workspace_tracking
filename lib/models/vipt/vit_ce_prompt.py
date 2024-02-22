@@ -152,7 +152,7 @@ class VisionTransformerCE(VisionTransformer):
             prompt_blocks = []
             block_nums = depth if self.prompt_type == 'vipt_deep' else 1
             for i in range(block_nums):
-                prompt_blocks.append(Prompt_block(inplanes=embed_dim, hide_channel=8, smooth=True))
+                prompt_blocks.append(Prompt_block(inplanes=embed_dim, hide_channel=32, smooth=True))
             self.prompt_blocks = nn.Sequential(*prompt_blocks)
             prompt_norms = []
             for i in range(block_nums):
