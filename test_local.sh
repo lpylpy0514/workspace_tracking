@@ -4,7 +4,7 @@
 
 # about your tracker
 script="ostrack"
-config="viptb_ce_draw"
+config="viptb_ce_draw_dim32"
 num_gpus=2
 num_thread=4
 

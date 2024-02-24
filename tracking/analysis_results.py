@@ -164,6 +164,8 @@ trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_ce_td_osckpt', 
                             run_ids=None, display_name='vitb_ce_td_osckpt'))
 trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw', dataset_name=dataset_name,
                             run_ids=None, display_name='viptb_ce_draw'))
+trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw_dim32', dataset_name=dataset_name,
+                            run_ids=None, display_name='viptb_ce_draw_dim32'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_384_mae_ce_32x4_ep300', dataset_name=dataset_name,
 #                             run_ids=None, display_name='OSTrack384'))
 
