@@ -1,9 +1,9 @@
 import torch
 from torch.utils.data.distributed import DistributedSampler
 # datasets related
-from lib.train.dataset import Lasot, Got10k, MSCOCOSeq, ImagenetVID, TrackingNet
+from lib.train.dataset import Lasot, Got10k, MSCOCOSeq, ImagenetVID, TrackingNet, Imagenet1k
 from lib.train.dataset import Lasot_lmdb, Got10k_lmdb, MSCOCOSeq_lmdb, ImagenetVID_lmdb, TrackingNet_lmdb
-from lib.train.data import opencv_loader, processing, LTRLoader
+from lib.train.data import sampler, opencv_loader, processing, LTRLoader
 import lib.train.data.transforms as tfm
 from lib.utils.misc import is_main_process
 
@@ -15,8 +15,10 @@ def update_settings(settings, cfg):
     settings.output_sz = {'template': cfg.DATA.TEMPLATE.SIZE,
                           'search': cfg.DATA.SEARCH.SIZE}
     settings.center_jitter_factor = {'template': cfg.DATA.TEMPLATE.CENTER_JITTER,
+                                     'template_dyn': cfg.DATA.TEMPLATE.CENTER_JITTER_DYN,
                                      'search': cfg.DATA.SEARCH.CENTER_JITTER}
     settings.scale_jitter_factor = {'template': cfg.DATA.TEMPLATE.SCALE_JITTER,
+                                    'template_dyn': cfg.DATA.TEMPLATE.SCALE_JITTER_DYN,
                                     'search': cfg.DATA.SEARCH.SCALE_JITTER}
     settings.grad_clip_norm = cfg.TRAIN.GRAD_CLIP_NORM
     settings.print_stats = None
@@ -28,8 +30,7 @@ def names2datasets(name_list: list, settings, image_loader):
     assert isinstance(name_list, list)
     datasets = []
     for name in name_list:
-        assert name in ["LASOT", "GOT10K_vottrain", "GOT10K_votval", "GOT10K_train_full", "GOT10K_official_val",
-                        "COCO17", "VID", "TRACKINGNET"]
+        assert name in ["LASOT", "GOT10K_vottrain", "GOT10K_votval", "GOT10K_train_full", "COCO17", "VID", "TRACKINGNET", "IMAGENET1K"]
         if name == "LASOT":
             if settings.use_lmdb:
                 print("Building lasot dataset from lmdb")
@@ -54,11 +55,6 @@ def names2datasets(name_list: list, settings, image_loader):
                 datasets.append(Got10k_lmdb(settings.env.got10k_lmdb_dir, split='votval', image_loader=image_loader))
             else:
                 datasets.append(Got10k(settings.env.got10k_dir, split='votval', image_loader=image_loader))
-        if name == "GOT10K_official_val":
-            if settings.use_lmdb:
-                raise ValueError("Not implement")
-            else:
-                datasets.append(Got10k(settings.env.got10k_val_dir, split=None, image_loader=image_loader))
         if name == "COCO17":
             if settings.use_lmdb:
                 print("Building COCO2017 from lmdb")
@@ -78,10 +74,16 @@ def names2datasets(name_list: list, settings, image_loader):
             else:
                 # raise ValueError("NOW WE CAN ONLY USE TRACKINGNET FROM LMDB")
                 datasets.append(TrackingNet(settings.env.trackingnet_dir, image_loader=image_loader))
+        if name == "IMAGENET1K":
+            datasets.append(Imagenet1k(settings.env.imagenet1k_dir, image_loader=image_loader))
     return datasets
 
 
 def build_dataloaders(cfg, settings):
+    settings.num_template = getattr(cfg.DATA.TEMPLATE, "NUMBER", 1)
+    settings.num_search = getattr(cfg.DATA.SEARCH, "NUMBER", 1)
+    settings.num_template_dyn = getattr(cfg.DATA.TEMPLATE, "NUMBER_DYN", 0)
+    # settings.num_search = getattr(cfg.DATA.SEARCH, "NUMBER", 1)
     # Data transform
     transform_joint = tfm.Transform(tfm.ToGrayscale(probability=0.05),
                                     tfm.RandomHorizontalFlip(probability=0.5))
@@ -97,7 +99,7 @@ def build_dataloaders(cfg, settings):
     output_sz = settings.output_sz
     search_area_factor = settings.search_area_factor
 
-    data_processing_train = processing.STARKProcessing(search_area_factor=search_area_factor,
+    data_processing_train = processing.DYNProcessing(search_area_factor=search_area_factor,
                                                        output_sz=output_sz,
                                                        center_jitter_factor=settings.center_jitter_factor,
                                                        scale_jitter_factor=settings.scale_jitter_factor,
@@ -106,7 +108,7 @@ def build_dataloaders(cfg, settings):
                                                        joint_transform=transform_joint,
                                                        settings=settings)
 
-    data_processing_val = processing.STARKProcessing(search_area_factor=search_area_factor,
+    data_processing_val = processing.DYNProcessing(search_area_factor=search_area_factor,
                                                      output_sz=output_sz,
                                                      center_jitter_factor=settings.center_jitter_factor,
                                                      scale_jitter_factor=settings.scale_jitter_factor,
@@ -116,18 +118,9 @@ def build_dataloaders(cfg, settings):
                                                      settings=settings)
 
     # Train sampler and loader
-    settings.num_template = getattr(cfg.DATA.TEMPLATE, "NUMBER", 1)
-    settings.num_search = getattr(cfg.DATA.SEARCH, "NUMBER", 1)
     sampler_mode = getattr(cfg.DATA, "SAMPLER_MODE", "causal")
     train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False)
-    # preprocess = getattr(cfg.DATA.TEMPLATE, "PREPROCESS", 'None')
     print("sampler_mode", sampler_mode)
-    # if preprocess == 'None':
-    from lib.train.data import sampler
-    # elif preprocess == 'rect':
-    #     from lib.train.data import sampler_rect as sampler
-    # else:
-    #     raise NotImplementedError
     dataset_train = sampler.TrackingSampler(datasets=names2datasets(cfg.DATA.TRAIN.DATASETS_NAME, settings, opencv_loader),
                                             p_datasets=cfg.DATA.TRAIN.DATASETS_RATIO,
                                             samples_per_epoch=cfg.DATA.TRAIN.SAMPLE_PER_EPOCH,
@@ -156,61 +149,111 @@ def build_dataloaders(cfg, settings):
     return loader_train, loader_val
 
 
-# def get_optimizer_scheduler(net, cfg):
-#     train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False)
-#     if train_cls:
-#         print("Only training classification head. Learnable parameters are shown below.")
-#         param_dicts = [
-#             {"params": [p for n, p in net.named_parameters() if "cls" in n and p.requires_grad]}
-#         ]
-#
-#         for n, p in net.named_parameters():
-#             if "cls" not in n:
-#                 p.requires_grad = False
-#             else:
-#                 print(n)
-#     else:
-#         param_dicts = [
-#             {"params": [p for n, p in net.named_parameters() if "backbone" not in n and p.requires_grad]},
-#             {
-#                 "params": [p for n, p in net.named_parameters() if "backbone" in n and p.requires_grad],
-#                 "lr": cfg.TRAIN.LR * cfg.TRAIN.BACKBONE_MULTIPLIER,
-#             },
-#         ]
-#         if is_main_process():
-#             print("Learnable parameters are shown below.")
-#             for n, p in net.named_parameters():
-#                 if p.requires_grad:
-#                     print(n)
-#
-#     if cfg.TRAIN.OPTIMIZER == "ADAMW":
-#         optimizer = torch.optim.AdamW(param_dicts, lr=cfg.TRAIN.LR,
-#                                       weight_decay=cfg.TRAIN.WEIGHT_DECAY)
-#     else:
-#         raise ValueError("Unsupported Optimizer")
-#     if cfg.TRAIN.SCHEDULER.TYPE == 'step':
-#         lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, cfg.TRAIN.LR_DROP_EPOCH)
-#     elif cfg.TRAIN.SCHEDULER.TYPE == "Mstep":
-#         lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
-#                                                             milestones=cfg.TRAIN.SCHEDULER.MILESTONES,
-#                                                             gamma=cfg.TRAIN.SCHEDULER.GAMMA)
-#     else:
-#         raise ValueError("Unsupported scheduler")
-#     return optimizer, lr_scheduler
+def build_ubbr_dataloaders(cfg, settings):
+    settings.num_template = getattr(cfg.DATA.TEMPLATE, "NUMBER", 1)
+    settings.num_search = getattr(cfg.DATA.SEARCH, "NUMBER", 1)
+    settings.num_template_dyn = getattr(cfg.DATA.TEMPLATE, "NUMBER_DYN", 0)
+    settings.num_search = getattr(cfg.DATA.SEARCH, "NUMBER", 1)
+    # Data transform
+    transform_joint = tfm.Transform(tfm.ToGrayscale(probability=0.05),
+                                    tfm.RandomHorizontalFlip(probability=0.5))
+
+    transform_train = tfm.Transform(tfm.ToTensorAndJitter(0.2),
+                                    tfm.RandomHorizontalFlip_Norm(probability=0.5),
+                                    tfm.Normalize(mean=cfg.DATA.MEAN, std=cfg.DATA.STD))
+
+    transform_val = tfm.Transform(tfm.ToTensor(),
+                                  tfm.Normalize(mean=cfg.DATA.MEAN, std=cfg.DATA.STD))
+
+    # The tracking pairs processing module
+    output_sz = settings.output_sz
+    search_area_factor = settings.search_area_factor
+
+    data_processing_train = processing.DYNProcessing(search_area_factor=search_area_factor,
+                                                       output_sz=output_sz,
+                                                       center_jitter_factor=settings.center_jitter_factor,
+                                                       scale_jitter_factor=settings.scale_jitter_factor,
+                                                       mode='sequence',
+                                                       transform=transform_train,
+                                                       joint_transform=transform_joint,
+                                                       settings=settings)
+
+    data_processing_val = processing.DYNProcessing(search_area_factor=search_area_factor,
+                                                     output_sz=output_sz,
+                                                     center_jitter_factor=settings.center_jitter_factor,
+                                                     scale_jitter_factor=settings.scale_jitter_factor,
+                                                     mode='sequence',
+                                                     transform=transform_val,
+                                                     joint_transform=transform_joint,
+                                                     settings=settings)
+
+    # Train sampler and loader
+    sampler_mode = getattr(cfg.DATA, "SAMPLER_MODE", "single")
+    print("sampler_mode", sampler_mode)
+    dataset_train = sampler.UBBRSampler(datasets=names2datasets(cfg.DATA.TRAIN.DATASETS_NAME, settings, opencv_loader),
+                                            p_datasets=cfg.DATA.TRAIN.DATASETS_RATIO,
+                                            samples_per_epoch=cfg.DATA.TRAIN.SAMPLE_PER_EPOCH,
+                                            max_gap=cfg.DATA.MAX_SAMPLE_INTERVAL, num_search_frames=settings.num_search,
+                                            num_template_frames=settings.num_template, processing=data_processing_train,
+                                            frame_sample_mode=sampler_mode)
+
+    train_sampler = DistributedSampler(dataset_train) if settings.local_rank != -1 else None
+    shuffle = False if settings.local_rank != -1 else True
+
+    loader_train = LTRLoader('train', dataset_train, training=True, batch_size=cfg.TRAIN.BATCH_SIZE, shuffle=shuffle,
+                             num_workers=cfg.TRAIN.NUM_WORKER, drop_last=True, stack_dim=1, sampler=train_sampler)
+
+    # Validation samplers and loaders
+    dataset_val = sampler.TrackingSampler(datasets=names2datasets(cfg.DATA.VAL.DATASETS_NAME, settings, opencv_loader),
+                                          p_datasets=cfg.DATA.VAL.DATASETS_RATIO,
+                                          samples_per_epoch=cfg.DATA.VAL.SAMPLE_PER_EPOCH,
+                                          max_gap=cfg.DATA.MAX_SAMPLE_INTERVAL, num_search_frames=settings.num_search,
+                                          num_template_frames=settings.num_template, processing=data_processing_val,
+                                          frame_sample_mode="causal")
+    val_sampler = DistributedSampler(dataset_val) if settings.local_rank != -1 else None
+    loader_val = LTRLoader('val', dataset_val, training=False, batch_size=cfg.TRAIN.BATCH_SIZE,
+                           num_workers=cfg.TRAIN.NUM_WORKER, drop_last=True, stack_dim=1, sampler=val_sampler,
+                           epoch_interval=cfg.TRAIN.VAL_EPOCH_INTERVAL)
+
+    return loader_train, loader_val
+
 
 def get_optimizer_scheduler(net, cfg):
-    prompt = getattr(cfg.TRAIN, "PROMPT", "")
-    train_type = getattr(prompt, "TYPE", "")
-    if 'vipt' in train_type:
-        # print("Only training prompt parameters. They are: ")
+    train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False)
+    train_iou = getattr(cfg.TRAIN, "TRAIN_IOU", False)
+    if (train_cls and train_iou):
+        print("Only training classification head and iou prediction head. Learnable parameters are shown below.")
         param_dicts = [
-            {"params": [p for n, p in net.named_parameters() if "prompt" in n and p.requires_grad]}
+            {"params": [p for n, p in net.named_parameters() if (("cls_head" in n) or ("iou_head" in n)) and p.requires_grad]}
         ]
+
         for n, p in net.named_parameters():
-            if "prompt" not in n:
+            if ("cls_head" not in n) and ("iou_head" not in n):
                 p.requires_grad = False
-            # else:
-            #     print(n)
+            else:
+                print(n)
+    elif train_cls:
+        print("Only training classification head. Learnable parameters are shown below.")
+        param_dicts = [
+            {"params": [p for n, p in net.named_parameters() if "cls_head" in n and p.requires_grad]}
+        ]
+
+        for n, p in net.named_parameters():
+            if "cls_head" not in n:
+                p.requires_grad = False
+            else:
+                print(n)
+    elif train_iou:
+        print("Only training iou prediction head. Learnable parameters are shown below.")
+        param_dicts = [
+            {"params": [p for n, p in net.named_parameters() if "iou_head" in n and p.requires_grad]}
+        ]
+
+        for n, p in net.named_parameters():
+            if "iou_head" not in n:
+                p.requires_grad = False
+            else:
+                print(n)
     else:
         param_dicts = [
             {"params": [p for n, p in net.named_parameters() if "backbone" not in n and p.requires_grad]},
@@ -237,6 +280,5 @@ def get_optimizer_scheduler(net, cfg):
                                                             milestones=cfg.TRAIN.SCHEDULER.MILESTONES,
                                                             gamma=cfg.TRAIN.SCHEDULER.GAMMA)
     else:
-        # lr_scheduler = None
         raise ValueError("Unsupported scheduler")
     return optimizer, lr_scheduler

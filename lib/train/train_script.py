@@ -13,10 +13,11 @@ from .base_functions import *
 from lib.models.ostrack import build_ostrack, build_small_ostrack
 from lib.models.efficientvit import build_efficienttrack
 from lib.models.vit_dist import build_ostrack_dist
+from lib.models.HiT import build_hit
 from lib.models.vittrack import build_vittrack
 from lib.models.mae.vit import mae_vit_l
 # forward propagation related
-from lib.train.actors import OSTrackActor
+from lib.train.actors import OSTrackActor, HiTActor
 from lib.train.actors import OSTrackDistillationActor
 from lib.train.actors import VTActor
 from lib.train.actors import VtActor
@@ -66,6 +67,8 @@ def run(settings):
             net = build_viptrack(cfg)
         else:
             net = build_ostrack(cfg)
+    elif settings.script_name == "HiT":
+        net = build_hit(cfg)
     elif settings.script_name == 'vit_dist' and cfg.TRAIN.AUX_TYPE == "mean":
         net = build_ostrack_dist(cfg)
     elif settings.script_name == 'vit_dist' and cfg.TRAIN.AUX_TYPE == "Trblk":
@@ -132,6 +135,10 @@ def run(settings):
         objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
         loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT, 'focal': 1., 'cls': 1.0, 'aux': cfg.TRAIN.AUX_WEIGHT}
         actor = OSTrackActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+    elif settings.script_name == "HiT":
+        objective = {'giou': giou_loss, 'l1': l1_loss}
+        loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT}
+        actor = HiTActor(net=net, objective=objective, loss_weight=loss_weight, settings=settings)
     elif cfg.TRAIN.AUX_TYPE == 'None':
         focal_loss = FocalLoss()
         objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
