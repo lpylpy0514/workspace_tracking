@@ -37,7 +37,7 @@ DATA:
     - 1
     SAMPLE_PER_EPOCH: 10000
 MODEL:
-  PRETRAINED: "pretrained_models/VT_ep1500.pth.tar"
+  PRETRAINED: "../pretrained_models/VT_ep1500.pth.tar"
   BACKBONE:
     DILATION: false
     OUTPUT_LAYERS:

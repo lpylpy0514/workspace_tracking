@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # about your tracker
-script="HiT"
-config="HiT_Base"
+script="ostrack"
+config="viptb_image"
 #config="spd_test"
-num_gpus=1
+num_gpus=2
 num_thread=8
 
 # training

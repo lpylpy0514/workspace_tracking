@@ -362,11 +362,14 @@ freeze backbone的实验对比？
 | etm                         | mae      | 74.54        | 67.83        | 83.08       | 72.7       |
 | talphamask                  | mae      | 74.45        | 67.46        | 83.10       | 72.8       |
 | td_osckpt第二次             |          | 75.76(+0.62) | 68.93        | 83.56       | 74.8       |
-| **放开transparency**        |          |              |              |             |            |
+| **放开transparency**        |          |              | 68.15        |             | 73.2       |
+| ce_td                       |          |              | 68.12        |             | 73.8       |
 | 在loss里加入透明度          |          |              |              |             |            |
-| vipt dim=32                 |          |              |              |             |            |
-| **模板抖动**                |          |              |              | 83.69       | 72.2       |
-| 轻量化tracker               |          |              |              |             |            |
+| vipt dim=8 no freeze        |          |              | 68.18        |             | 73.2       |
+| vipt dim=32no freeze        |          |              | 67.89        |             | 73.6       |
+| vipt dim=32                 |          |              |              |             | 73.8(+0.2) |
+| **模板抖动**                |          |              | 67.93        | 83.69       | 72.2       |
+| 轻量化tracker(HiT_Base)     |          |              |              |             | 64.8(+0.8) |
 | extra全图模板               |          |              |              |             |            |
 | 多模板动态模板抖动+box/mask |          |              |              |             |            |
 
@@ -486,3 +489,44 @@ template有4个通道，search有3个通道
 
 mask质量偏低？
 
+
+
+1、训练过程 透明度的变化	1.1~1.15，训练集变高了，但测试集下降了
+
+学习遮挡信息增强对目标的理解能力
+
+模板图像通过网络生成颜色和透明度
+
+vipt！
+
+降维到32，删除FOVEA
+
+
+
+20240225
+
+1、贡献点
+
+​	提出了visual prompt tracking方式提升了通用跟踪网络的性能
+
+​	提出了基于模板生成prompt中的颜色与透明度的方法
+
+2、图2的内容
+
+​	
+
+3、表格对比的数据
+
+​	大表：
+
+​		ostrack ostrack-p XX-p（参考zoomtrack类似表格）
+
+​	消融实验部分：
+
+​		画框方式：		baseline 空心固定颜色框 空心可学颜色框 实心可学颜色框 实心可学颜色mask vipt 
+
+​		初始化权重：	baseline mae ostrack clip
+
+​		基础模型：		ostrack ostrack_noce HiT
+
+​		

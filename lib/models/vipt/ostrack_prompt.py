@@ -17,7 +17,7 @@ from lib.utils.box_ops import box_xyxy_to_cxcywh
 class ViPTrack(nn.Module):
     """ This is the base class for ViPTrack """
 
-    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER", template_preprocess=None):
+    def __init__(self, transformer, box_head, aux_loss=False, head_type="CORNER", template_preprocess=None, search_preprocess=None):
         """ Initializes the model.
         Parameters:
             transformer: torch module of the transformer architecture.
@@ -37,6 +37,7 @@ class ViPTrack(nn.Module):
             self.box_head = _get_clones(self.box_head, 6)
 
         self.template_preprocess = template_preprocess
+        self.search_preprocess = search_preprocess
 
     def forward(self, template: torch.Tensor,
                 search: torch.Tensor,
@@ -58,8 +59,22 @@ class ViPTrack(nn.Module):
             x2, y2 = x1 + w, y1 + h
             template_alpha = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
             template_alpha = template_alpha.float().view(B, 1, H, W).cuda()
-            search_alpha = torch.zeros((B, 1, H * 2, W * 2)).cuda()
             template = torch.concat((template, template_alpha, template_alpha, template_alpha), dim=1)
+        elif self.template_preprocess == "image_vipt":
+            assert H == W
+            image_size = H
+            indice = torch.arange(0, W).view(-1, 1)
+            coord_x = indice.repeat((image_size, 1)).view(image_size, image_size).float().to(template.device)
+            coord_y = indice.repeat((1, image_size)).view(image_size, image_size).float().to(template.device)
+            x1, y1, w, h = (template_anno.view(B, 4, 1, 1) * image_size).unbind(1)
+            x2, y2 = x1 + w, y1 + h
+            template_alpha = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
+            template_alpha = template_alpha.float().view(B, 1, H, W).cuda() * template
+            template = torch.concat((template, template_alpha), dim=1)
+        if self.search_preprocess == "generate":
+            net = None
+        else:
+            search_alpha = torch.zeros((B, 1, H * 2, W * 2)).cuda()
             search = torch.concat((search, search_alpha, search_alpha, search_alpha), dim=1)
         x, aux_dict = self.backbone(z=template, x=search,
                                     ce_template_mask=ce_template_mask,
@@ -149,13 +164,15 @@ def build_viptrack(cfg, training=True):
 
     if cfg.MODEL.PROCESS.TEMPLATE == "draw_vipt":
         template_preprocess = nn.Identity()
-
+    elif cfg.MODEL.PROCESS.TEMPLATE == "image_vipt":
+        template_preprocess = "image_vipt"
     model = ViPTrack(
         backbone,
         box_head,
         aux_loss=False,
         head_type=cfg.MODEL.HEAD.TYPE,
-        template_preprocess=template_preprocess
+        template_preprocess=template_preprocess,
+        search_preprocess=getattr(cfg.MODEL.PROCESS, "SEARCH", "")
     )
 
     if 'OSTrack' in cfg.MODEL.PRETRAIN_FILE and training:

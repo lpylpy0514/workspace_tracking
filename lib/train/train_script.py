@@ -13,7 +13,7 @@ from .base_functions import *
 from lib.models.ostrack import build_ostrack, build_small_ostrack
 from lib.models.efficientvit import build_efficienttrack
 from lib.models.vit_dist import build_ostrack_dist
-from lib.models.HiT import build_hit
+# from lib.models.HiT import build_hit
 from lib.models.vittrack import build_vittrack
 from lib.models.mae.vit import mae_vit_l
 # forward propagation related
@@ -62,7 +62,7 @@ def run(settings):
     # cfg.depth = 3
     # Create network
     if settings.script_name == "ostrack":
-        if cfg.MODEL.PROCESS.TEMPLATE == "draw_vipt":
+        if "vipt" in cfg.MODEL.PROCESS.TEMPLATE:
             from lib.models.vipt.ostrack_prompt import build_viptrack
             net = build_viptrack(cfg)
         else:
