@@ -12,6 +12,7 @@ from lib.models.layers.head import build_box_head
 from lib.models.vipt.vit_prompt import vit_base_patch16_224_prompt
 from lib.models.vipt.vit_ce_prompt import vit_base_patch16_224_ce_prompt
 from lib.utils.box_ops import box_xyxy_to_cxcywh
+from timm.models.vision_transformer import trunc_normal_
 
 
 class ViPTrack(nn.Module):
@@ -38,6 +39,9 @@ class ViPTrack(nn.Module):
 
         self.template_preprocess = template_preprocess
         self.search_preprocess = search_preprocess
+        if self.search_preprocess == "learn":
+            self.search_alpha = torch.nn.Parameter(torch.zeros(1, 3, 256, 256))
+            trunc_normal_(self.search_alpha, std=.02)
 
     def forward(self, template: torch.Tensor,
                 search: torch.Tensor,
@@ -71,8 +75,8 @@ class ViPTrack(nn.Module):
             template_alpha = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
             template_alpha = template_alpha.float().view(B, 1, H, W).cuda() * template
             template = torch.concat((template, template_alpha), dim=1)
-        if self.search_preprocess == "generate":
-            net = None
+        if self.search_preprocess == "learn":
+            search = torch.concat((search, self.search_alpha.repeat((B, 1, 1, 1))), dim=1)
         else:
             search_alpha = torch.zeros((B, 1, H * 2, W * 2)).cuda()
             search = torch.concat((search, search_alpha, search_alpha, search_alpha), dim=1)

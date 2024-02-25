@@ -2,7 +2,7 @@
 
 # about your tracker
 script="ostrack"
-config="viptb_image"
+config="viptb_image_searchlearn"
 #config="spd_test"
 num_gpus=2
 num_thread=8

@@ -49,7 +49,7 @@ MODEL:
 #  PRETRAIN_FILE: "/home/ymz/newdisk2/workspace_tracking/output/checkpoints/train/ostrack/vitb_256_mae_ce_32x4_ep300/OSTrack_ep0300.pth.tar"
   PROCESS:
     TEMPLATE: "image_vipt"
-    SEARCH: "None"
+    SEARCH: "learn"
   EXTRA_MERGER: False
   RETURN_INTER: False
   BACKBONE:
