@@ -23,9 +23,8 @@ from segment_anything import SamPredictor, sam_model_registry
 class OSTrack(BaseTracker):
     def __init__(self, params, dataset_name):
         super(OSTrack, self).__init__(params)
-        if params.cfg.MODEL.PROCESS.TEMPLATE == "draw_vipt":
+        if "vipt" in params.cfg.MODEL.PROCESS.TEMPLATE:
             network = build_viptrack(params.cfg, training=False)
-            self.params.checkpoint = '/home/ymz/newdisk2/workspace_tracking/output/checkpoints/train/ostrack/viptb_ce_draw_dim32_freezeos/ViPTrack_ep0300.pth.tar'
         else:
             network = build_ostrack(params.cfg, training=False)
         network.load_state_dict(torch.load(self.params.checkpoint, map_location='cpu')['net'], strict=True)

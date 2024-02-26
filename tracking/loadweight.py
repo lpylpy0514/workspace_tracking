@@ -13,14 +13,14 @@ from segment_anything import sam_model_registry, SamPredictor
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run a train scripts in train_settings.')
     parser.add_argument('--script', type=str, default='ostrack', help='Name of the train script.')
-    parser.add_argument('--config', type=str, default='experiments/ostrack/vitb_td_osckpt_nosig.yaml', help="Name of the config file.")
+    parser.add_argument('--config', type=str, default='experiments/ostrack/vitb_td_osckpt1.yaml', help="Name of the config file.")
     args = parser.parse_args()
 
     config_module = importlib.import_module("lib.config.%s.config" % args.script)
     cfg = config_module.cfg
     config_module.update_config_from_file(args.config)
     model = build_ostrack(cfg)
-    checkpoint = torch.load("output/checkpoints/train/ostrack/vitb_td_osckpt_nosig/OSTrack_ep0300.pth.tar", map_location="cpu")
+    checkpoint = torch.load("output/checkpoints/train/ostrack/vitb_td_osckpt1/OSTrack_ep0300.pth.tar", map_location="cpu")
     missing_keys, unexpected_keys = model.load_state_dict(checkpoint["net"], strict=False)
     print('Load pretrained model from: ' + cfg.MODEL.PRETRAIN_FILE)
 

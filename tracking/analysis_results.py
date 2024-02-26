@@ -136,36 +136,40 @@ dataset_name = 'lasot'
 #                             run_ids=None, display_name='FGAF'))
 # trackers.extend(trackerlist(name='efficienttrack', parameter_name='base', dataset_name=dataset_name,
 #                             run_ids=None, display_name='base'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_jittered_search_embedding', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_jittered_search_embedding'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_td_osckpt'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_talpha_osckpt', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_talpha_osckpt'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_osckpt', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_osckpt'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_talphamask_osckpt', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_talphamask_osckpt'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_extratempmask_osckpt', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_extratempmask_osckpt'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_tdmask_mae', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_tdmask_mae'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_etm_mae', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_etm_mae'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_talphamask_mae', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_talphamask_mae'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt1', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_td_osckpt1'))
-# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt_nosig', dataset_name=dataset_name,
-#                             run_ids=None, display_name='vitb_td_osckpt_nosig'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt_tj', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_td_osckpt_tj'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_ce_td_osckpt', dataset_name=dataset_name,
-                            run_ids=None, display_name='vitb_ce_td_osckpt'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw', dataset_name=dataset_name,
-                            run_ids=None, display_name='viptb_ce_draw'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw_dim32', dataset_name=dataset_name,
-                            run_ids=None, display_name='viptb_ce_draw_dim32'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_jittered_search_embedding', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_jittered_search_embedding'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_td_osckpt'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_talpha_osckpt', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_talpha_osckpt'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_osckpt', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_osckpt'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_talphamask_osckpt', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_talphamask_osckpt'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_extratempmask_osckpt', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_extratempmask_osckpt'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_tdmask_mae', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_tdmask_mae'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_etm_mae', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_etm_mae'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_talphamask_mae', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_talphamask_mae'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt1', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_td_osckpt1'))
+# # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt_nosig', dataset_name=dataset_name,
+# #                             run_ids=None, display_name='vitb_td_osckpt_nosig'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_td_osckpt_tj', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_td_osckpt_tj'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_ce_td_osckpt', dataset_name=dataset_name,
+#                             run_ids=None, display_name='vitb_ce_td_osckpt'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw', dataset_name=dataset_name,
+#                             run_ids=None, display_name='viptb_ce_draw'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw_dim32', dataset_name=dataset_name,
+#                             run_ids=None, display_name='viptb_ce_draw_dim32'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw_dim32_freezeos', dataset_name=dataset_name,
+#                             run_ids=None, display_name='viptb_ce_draw_dim32_freezeos'))
+trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image', dataset_name=dataset_name,
+                            run_ids=None, display_name='viptb_image'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_384_mae_ce_32x4_ep300', dataset_name=dataset_name,
 #                             run_ids=None, display_name='OSTrack384'))
 

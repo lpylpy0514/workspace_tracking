@@ -151,7 +151,7 @@ class VisionTransformerCE(VisionTransformer):
         for i, blk in enumerate(self.blocks):
             x, global_index_t, global_index_s, removed_index_s, attn = \
                 blk(x_origin, global_index_t, global_index_s, mask_x, ce_template_mask, ce_keep_rate)
-            
+
             if self.ce_loc is not None and i in self.ce_loc:
                 removed_indexes_s.append(removed_index_s)
 
@@ -177,14 +177,13 @@ class VisionTransformerCE(VisionTransformer):
             # recover original token order
             C = x.shape[-1]
             # x = x.gather(1, index_all.unsqueeze(-1).expand(B, -1, C).argsort(1))
-            x = torch.zeros_like(x).scatter_(dim=1, index=index_all.unsqueeze(-1).expand(B, -1, C).to(torch.int64), src=x)
+            x = torch.zeros_like(x).scatter_(dim=1, index=index_all.unsqueeze(-1).expand(B, -1, C).to(torch.int64),
+                                             src=x)
 
         x = recover_tokens(x, lens_z_new, lens_x, mode=self.cat_mode)
 
         # re-concatenate with the template, which may be further used by other modules
         x = torch.cat([z, x], dim=1)
-
-
 
         aux_dict = {
             "attn": attn,
@@ -198,7 +197,8 @@ class VisionTransformerCE(VisionTransformer):
                 tnc_keep_rate=None, extra_features=None,
                 return_last_attn=False):
 
-        x, aux_dict = self.forward_features(z, x, ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate, extra_features=extra_features)
+        x, aux_dict = self.forward_features(z, x, ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate,
+                                            extra_features=extra_features)
 
         return x, aux_dict
 

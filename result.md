@@ -338,40 +338,42 @@ freeze backbone的实验对比？
 
 原图画框or template画框？
 
-| model                       | pretrain | average      | lasot        | trackingnet | got10k     |
-| --------------------------- | -------- | ------------ | ------------ | ----------- | ---------- |
-| ostrack(no ce)(32*4)        | MAE      | 75.07        | 68.7         | 82.9        | 73.6       |
-| baseline(64*2)              | MAE      | 75.14        | 68.53        | 83.60       | 73.3       |
-| baseline(32*2)              | MAE      | 74.72        | 68.29        | 83.19       | 72.7       |
-| fixed-learn-rect(64*2)      | MAE      | 74.74(-0.4)  | 68.01        | 83.01       | 73.2       |
-| templatecolor(64*2)         | MAE      | 75.14(+0.0)  | 68.91        | 83.11       | 73.4       |
-| templateembed(32*2)         | MAE      | 75.00(+0.28) | 68.55        | 83.54       | 72.9       |
-| templateembed(64*2)         | MAE      | 75.25(+0.11) | 68.95        | 83.59       | 73.2       |
-| templatecolor(64*2)         | CLIP     |              | 65.86        |             | 69.1       |
-| search embed(64*2)          | MAE      |              |              |             | 67.3(-6)   |
-| search & template draw      |          |              |              |             | 62.8(-11)  |
-| jittered draw               |          |              | 60.31(-8.22) | 80.70(-2.9) | 71.9(-1.4) |
-| jittered embedding          |          |              |              |             |            |
-| td_osckpt                   | os       | 75.50(+0.36) | 68.99        | 83.62       | 73.9       |
-| talpha_osckpt               | os       | 74.68(-0.46) | 67.51        | 83.32       | 73.2       |
-| osckpt对照组                | os       | 75.03        | 68.55        | 83.33       | 73.2       |
-| talphamask                  | os       | 74.55(-0.59) | 67.61        | 83.14       | 72.9       |
-| tdmask                      | osckpt   |              |              |             | 72.2       |
-| extratempmask               | os       | 75.01        | 67.95        | 83.29       | 73.8       |
-| tdmask                      | mae      | 74.02        | 67.35        | 82.82       | 71.9       |
-| etm                         | mae      | 74.54        | 67.83        | 83.08       | 72.7       |
-| talphamask                  | mae      | 74.45        | 67.46        | 83.10       | 72.8       |
-| td_osckpt第二次             |          | 75.76(+0.62) | 68.93        | 83.56       | 74.8       |
-| **放开transparency**        |          |              | 68.15        |             | 73.2       |
-| ce_td                       |          |              | 68.12        |             | 73.8       |
-| 在loss里加入透明度          |          |              |              |             |            |
-| vipt dim=8 no freeze        |          |              | 68.18        |             | 73.2       |
-| vipt dim=32no freeze        |          |              | 67.89        |             | 73.6       |
-| vipt dim=32                 |          |              |              |             | 73.8(+0.2) |
-| **模板抖动**                |          |              | 67.93        | 83.69       | 72.2       |
-| 轻量化tracker(HiT_Base)     |          |              |              |             | 64.8(+0.8) |
-| extra全图模板               |          |              |              |             |            |
-| 多模板动态模板抖动+box/mask |          |              |              |             |            |
+| model                              | pretrain | average      | lasot        | trackingnet  | got10k     |
+| ---------------------------------- | -------- | ------------ | ------------ | ------------ | ---------- |
+| ostrack(no ce)(32*4)               | MAE      | 75.07        | 68.7         | 82.9         | 73.6       |
+| baseline(64*2)                     | MAE      | 75.14        | 68.53        | 83.60        | 73.3       |
+| baseline(32*2)                     | MAE      | 74.72        | 68.29        | 83.19        | 72.7       |
+| fixed-learn-rect(64*2)             | MAE      | 74.74(-0.4)  | 68.01        | 83.01        | 73.2       |
+| templatecolor(64*2)                | MAE      | 75.14(+0.0)  | 68.91        | 83.11        | 73.4       |
+| templateembed(32*2)                | MAE      | 75.00(+0.28) | 68.55        | 83.54        | 72.9       |
+| templateembed(64*2)                | MAE      | 75.25(+0.11) | 68.95        | 83.59        | 73.2       |
+| templatecolor(64*2)                | CLIP     |              | 65.86        |              | 69.1       |
+| search embed(64*2)                 | MAE      |              |              |              | 67.3(-6)   |
+| search & template draw             |          |              |              |              | 62.8(-11)  |
+| jittered draw                      |          |              | 60.31(-8.22) | 80.70(-2.9)  | 71.9(-1.4) |
+| jittered embedding                 |          |              |              |              |            |
+| td_osckpt                          | os       | 75.50(+0.36) | 68.99        | 83.62        | 73.9       |
+| talpha_osckpt                      | os       | 74.68(-0.46) | 67.51        | 83.32        | 73.2       |
+| osckpt对照组                       | os       | 75.03        | 68.55        | 83.33        | 73.2       |
+| talphamask                         | os       | 74.55(-0.59) | 67.61        | 83.14        | 72.9       |
+| tdmask                             | osckpt   |              |              |              | 72.2       |
+| extratempmask                      | os       | 75.01        | 67.95        | 83.29        | 73.8       |
+| tdmask                             | mae      | 74.02        | 67.35        | 82.82        | 71.9       |
+| etm                                | mae      | 74.54        | 67.83        | 83.08        | 72.7       |
+| talphamask                         | mae      | 74.45        | 67.46        | 83.10        | 72.8       |
+| td_osckpt第二次                    |          | 75.76(+0.62) | 68.93        | 83.56        | 74.8       |
+| **放开transparency**               |          |              | 68.15        |              | 73.2       |
+| ce_td                              |          |              | 68.12        | 83.16        | 73.8       |
+| 在loss里加入透明度                 |          |              |              |              |            |
+| vipt dim=8 no freeze               |          |              | 68.18        |              | 73.2       |
+| vipt dim=32no freeze               |          |              | 67.89        |              | 73.6       |
+| vipt dim=32                        |          |              | 68.56(-0.54) | 83.09(+0.0)  | 73.8(+0.2) |
+| vipt 彩色框图像                    |          |              |              |              | 74.6       |
+| search可学习，以搜索区域为条件生成 |          |              |              |              |            |
+| **模板抖动**                       |          |              | 67.93        | 83.69        | 72.2       |
+| 轻量化tracker(HiT_Base)            |          |              | 64.29(-0.31) | 79.74(-0.26) | 64.8(+0.8) |
+| extra全图模板                      |          |              |              |              |            |
+| 多模板动态模板抖动+box/mask        |          |              |              |              |            |
 
 冻结ostrack主体 / ViPT draw
 
@@ -511,9 +513,13 @@ vipt！
 
 ​	提出了基于模板生成prompt中的颜色与透明度的方法
 
-2、图2的内容
+2、图的内容
 
-​	
+​	图1 与以前方法的区别，简图
+
+​	图2 详细生成结构
+
+​	template attention map对比图
 
 3、表格对比的数据
 
@@ -521,12 +527,38 @@ vipt！
 
 ​		ostrack ostrack-p XX-p（参考zoomtrack类似表格）
 
+​		通用tracker表+轻量化tracker表
+
 ​	消融实验部分：
 
 ​		画框方式：		baseline 空心固定颜色框 空心可学颜色框 实心可学颜色框 实心可学颜色mask vipt 
 
-​		初始化权重：	baseline mae ostrack clip
+​		初始化权重：	mae ostrack clip
 
-​		基础模型：		ostrack ostrack_noce HiT
+​		基础模型：		ostrack ostrack_noce HiT + ？
 
-​		
+4、要做的实验
+
+​	其他baseline模型加prompt
+
+​	验证推理时不需要运行透明度和颜色生成网络是否结果相同
+
+为什么能带来提升的分析？学出的结果是透明的
+
+9/13号机可用，10号机数据传输
+
+训练记录：
+
+vipt版模板采用框出来的模板图
+
+search采用可学习的参数作为dte附加参数
+
+测试记录：
+
+vipt模板01分别，搜索区域全0
+
+HiT加模板画画测试
+
+20240226
+
+10号机数据传输完成

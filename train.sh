@@ -7,7 +7,7 @@ apt-get install libturbojpeg
 cd /18353470163/lpy/workspace_tracking
 # about your tracker
 script="ostrack"
-config="viptb_image"
+config="viptb_image_384"
 #config="spd_test"
 num_gpus=2
 num_thread=8
