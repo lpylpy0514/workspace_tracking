@@ -305,6 +305,8 @@ def depreprocess(feature):
     std = torch.tensor([0.229, 0.224, 0.225]).view((1, 3, 1, 1))
     image = feature.cpu() * std + mean
     image = (image * 255).squeeze(0).permute(1, 2, 0).detach().numpy().astype(np.uint8)
+    import cv2
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     return image
 
 

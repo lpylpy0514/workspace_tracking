@@ -170,6 +170,10 @@ dataset_name = 'lasot'
 #                             run_ids=None, display_name='viptb_ce_draw_dim32_freezeos'))
 trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image', dataset_name=dataset_name,
                             run_ids=None, display_name='viptb_image'))
+trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image_searchlearn', dataset_name=dataset_name,
+                            run_ids=None, display_name='viptb_image_searchlearn'))
+trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image_384', dataset_name=dataset_name,
+                            run_ids=None, display_name='viptb_image_384'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_384_mae_ce_32x4_ep300', dataset_name=dataset_name,
 #                             run_ids=None, display_name='OSTrack384'))
 

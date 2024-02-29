@@ -74,7 +74,14 @@ class ViPTrack(nn.Module):
             x2, y2 = x1 + w, y1 + h
             template_alpha = (x2 > coord_x) & (coord_x > x1) & (y2 > coord_y) & (coord_y > y1)
             template_alpha = template_alpha.float().view(B, 1, H, W).cuda() * template
+            # from lib.models.ostrack.draw import depreprocess
+            # import cv2
+            # image = depreprocess(template[0:1] + template_alpha[0:1])
+            # cv2.imshow('image', image)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
             template = torch.concat((template, template_alpha), dim=1)
+
         if self.search_preprocess == "learn":
             search = torch.concat((search, self.search_alpha.repeat((B, 1, 1, 1))), dim=1)
         else:

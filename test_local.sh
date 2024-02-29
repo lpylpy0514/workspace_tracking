@@ -21,7 +21,7 @@ num_thread=4
 
 # about your tracker
 script="ostrack"
-config="viptb_image_searchlearn"
+config="viptb_image_384"
 
 # evaluation for got10k
 python tracking/test.py $script $config --dataset got10k_test --threads $num_thread --num_gpus $num_gpus
