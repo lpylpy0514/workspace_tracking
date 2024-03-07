@@ -53,6 +53,7 @@ class OSTrack(nn.Module):
                 past_search_anno=None,
                 template_mask=None,
                 ):
+        vis = False
         # extra_tokens = None
         B, C, W, H = template.shape
         extra_features = {}
@@ -107,7 +108,25 @@ class OSTrack(nn.Module):
                                     ce_keep_rate=ce_keep_rate,
                                     return_last_attn=return_last_attn,
                                     )
-
+        if vis:
+            from tracking.visualize_feature import depreprocess
+            import cv2
+            image1 = depreprocess(template[0:1])
+            image1 = cv2.resize(image1, (256, 256), interpolation=cv2.INTER_NEAREST)
+            image2 = depreprocess(search[0:1])
+            cv2.imshow("template", image1)
+            cv2.waitKey(1)
+            # cv2.destroyAllWindows()
+            cv2.imshow("search", image2)
+            cv2.waitKey(1)
+            from tracking.visualize_feature import visualize_feature
+            image3 = visualize_feature(x[:, :64, :])
+            image4 = visualize_feature(x[:, -256:, :])
+            cv2.imshow("template feature", image3)
+            cv2.waitKey(1)
+            cv2.imshow("search feature", image4)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
         # Forward head
         feat_last = x
         if isinstance(x, list):

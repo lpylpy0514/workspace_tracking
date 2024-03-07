@@ -4,8 +4,8 @@
 #cd HiT
 #script="HiT"
 #config="HiT_Base"
-num_gpus=2
-num_thread=4
+num_gpus=1
+num_thread=1
 #
 ## evaluation for got10k
 ##python tracking/test.py $script $config --dataset got10k_test --threads $num_thread --num_gpus $num_gpus
@@ -21,7 +21,7 @@ num_thread=4
 
 # about your tracker
 script="ostrack"
-config="viptb_image_384"
+config="vitb_256_mae_32x4_ep300"
 
 # evaluation for got10k
 python tracking/test.py $script $config --dataset got10k_test --threads $num_thread --num_gpus $num_gpus
