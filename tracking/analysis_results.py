@@ -6,7 +6,7 @@ from lib.test.analysis.plot_results import plot_results, print_results, print_pe
 from lib.test.evaluation import get_dataset, trackerlist
 
 trackers = []
-dataset_name = 'lasot'
+dataset_name = 'otb'
 """stark"""
 # trackers.extend(trackerlist(name='stark_s', parameter_name='baseline', dataset_name=dataset_name,
 #                             run_ids=None, display_name='STARK-S50'))
@@ -168,14 +168,16 @@ dataset_name = 'lasot'
 #                             run_ids=None, display_name='viptb_ce_draw_dim32'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_ce_draw_dim32_freezeos', dataset_name=dataset_name,
 #                             run_ids=None, display_name='viptb_ce_draw_dim32_freezeos'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image', dataset_name=dataset_name,
-                            run_ids=None, display_name='viptb_image'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image_searchlearn', dataset_name=dataset_name,
-                            run_ids=None, display_name='viptb_image_searchlearn'))
-trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image_384', dataset_name=dataset_name,
-                            run_ids=None, display_name='viptb_image_384'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image', dataset_name=dataset_name,
+#                             run_ids=None, display_name='viptb_image'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image_searchlearn', dataset_name=dataset_name,
+#                             run_ids=None, display_name='viptb_image_searchlearn'))
+# trackers.extend(trackerlist(name='ostrack', parameter_name='viptb_image_384', dataset_name=dataset_name,
+#                             run_ids=None, display_name='viptb_image_384'))
 # trackers.extend(trackerlist(name='ostrack', parameter_name='vitb_384_mae_ce_32x4_ep300', dataset_name=dataset_name,
 #                             run_ids=None, display_name='OSTrack384'))
+trackers.extend(trackerlist(name='vit_dist', parameter_name='vit_48_h32_noKD', dataset_name=dataset_name,
+                            run_ids=None, display_name='vittracker'))
 
 
 dataset = get_dataset(dataset_name)

@@ -2,7 +2,7 @@
 
 # about your tracker
 script="ostrack"
-config="vitb_debug"
+config="vitb_ce_te"
 #config="spd_test"
 num_gpus=2
 num_thread=8

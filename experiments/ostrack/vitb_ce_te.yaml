@@ -45,7 +45,8 @@ DATA:
     - 1
     SAMPLE_PER_EPOCH: 10000
 MODEL:
-  PREPROCESS: "template_embedding"
+  PROCESS:
+    TEMPLATE: "template_embedding"
   PRETRAIN_FILE: "mae_pretrain_vit_base.pth"
   EXTRA_MERGER: False
   RETURN_INTER: False
@@ -68,6 +69,8 @@ TRAIN:
   NUM_WORKER: 10
   OPTIMIZER: ADAMW
   PRINT_INTERVAL: 50
+  PROMPT:
+    TYPE: 'None'
   SCHEDULER:
     TYPE: step
     DECAY_RATE: 0.1

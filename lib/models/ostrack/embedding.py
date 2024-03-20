@@ -7,7 +7,7 @@ class Embedding(nn.Module):
     def __init__(self, template_size, template_factor, embed_dim):
         super().__init__()
         self.word_embeddings = nn.Embedding(template_size, embed_dim, max_norm=1, norm_type=2.0)
-        self.pos_embed = nn.Parameter(torch.zeros(1, 2, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, 2, embed_dim), requires_grad=True)
         self.template_size = template_size
         self.template_factor = template_factor
         trunc_normal_(self.word_embeddings.weight, std=.02)
@@ -17,7 +17,7 @@ class Embedding(nn.Module):
         template_w = self.template_size / self.template_factor * torch.sqrt(w / h)
         template_h = self.template_size / self.template_factor * torch.sqrt(h / w)
         wh = torch.stack((template_w, template_h), dim=1).int()
-        wh = torch.clamp(wh, min=0, max=self.template_factor - 1)
+        wh = torch.clamp(wh, min=0, max=self.template_size - 1)
         return self.word_embeddings(wh) + self.pos_embed
 
 
