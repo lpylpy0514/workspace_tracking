@@ -36,6 +36,10 @@ class Lasot(BaseVideoDataset):
             data_fraction - Fraction of dataset to be used. The complete dataset is used by default
         """
         root = env_settings().lasot_dir if root is None else root
+        idx = root.rfind("lasot")
+        mask_root = root[:idx] + str.replace(root[idx:], "lasot", "sam_lasot")
+        self.sam_mask = True if os.path.exists(mask_root) else False
+
         super().__init__('LaSOT', root, image_loader)
 
         # Keep a list of all classes
@@ -151,9 +155,10 @@ class Lasot(BaseVideoDataset):
         seq_path = self._get_sequence_path(seq_id)
         # replace the lasot in path to sam_lasot
         # lpy 2024.1.10
-        idx = seq_path.rfind("lasot")
-        mask_seq_path = seq_path[:idx] + str.replace(seq_path[idx:], "lasot", "sam_lasot")
-        mask = [self._get_mask(mask_seq_path, f_id) for f_id in frame_ids]
+        if self.sam_mask:
+            idx = seq_path.rfind("lasot")
+            mask_seq_path = seq_path[:idx] + str.replace(seq_path[idx:], "lasot", "sam_lasot")
+            mask = [self._get_mask(mask_seq_path, f_id) for f_id in frame_ids]
 
         obj_class = self._get_class(seq_path)
         frame_list = [self._get_frame(seq_path, f_id) for f_id in frame_ids]
@@ -162,7 +167,8 @@ class Lasot(BaseVideoDataset):
             anno = self.get_sequence_info(seq_id)
 
         anno_frames = {}
-        anno_frames['mask'] = mask
+        if self.sam_mask:
+            anno_frames['mask'] = mask
         for key, value in anno.items():
             anno_frames[key] = [value[f_id, ...].clone() for f_id in frame_ids]
 

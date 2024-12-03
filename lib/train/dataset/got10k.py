@@ -37,6 +37,9 @@ class Got10k(BaseVideoDataset):
             data_fraction - Fraction of dataset to be used. The complete dataset is used by default
         """
         root = env_settings().got10k_dir if root is None else root
+        idx = root.rfind("trackingnet")
+        mask_root = root[:idx] + str.replace(root[idx:], "got10k", "sam_got10k")
+        self.sam_mask = True if os.path.exists(mask_root) else False
         super().__init__('GOT10k', root, image_loader)
 
         # all folders inside the root
@@ -176,9 +179,10 @@ class Got10k(BaseVideoDataset):
 
         # replace the got10k in path to sam_got10k
         # lpy 2024.1.11
-        idx = seq_path.rfind("got10k")
-        mask_seq_path = seq_path[:idx] + str.replace(seq_path[idx:], "got10k", "sam_got10k")
-        mask = [self._get_mask(mask_seq_path, f_id) for f_id in frame_ids]
+        if self.sam_mask:
+            idx = seq_path.rfind("got10k")
+            mask_seq_path = seq_path[:idx] + str.replace(seq_path[idx:], "got10k", "sam_got10k")
+            mask = [self._get_mask(mask_seq_path, f_id) for f_id in frame_ids]
 
         frame_list = [self._get_frame(seq_path, f_id) for f_id in frame_ids]
 
@@ -186,7 +190,8 @@ class Got10k(BaseVideoDataset):
             anno = self.get_sequence_info(seq_id)
 
         anno_frames = {}
-        anno_frames['mask'] = mask
+        if self.sam_mask:
+            anno_frames['mask'] = mask
         for key, value in anno.items():
             anno_frames[key] = [value[f_id, ...].clone() for f_id in frame_ids]
 
